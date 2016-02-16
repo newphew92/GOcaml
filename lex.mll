@@ -1,22 +1,22 @@
 {
   open Parser
-}
 (*let get = Lexing.lexeme *)
 
 (* Helpers *)
 let lineNum = ref 1
 exception Syntax_error of string
 let syntax_error msg = raise (Syntax_error (msg ^ " on line " ^ (string_of_int !line_num)))
-type token = EOL | INT of int | PLUS | MINUS | TIMES |
+type token = EOL | INT of int | PLUS | MINUS | TIMES
 let tab = '\009'
 let return = '\013'
 let lineFeed = '\010'
-let eol = return |lineFeed | return lineFeed
-let int = ([1-9][0-9]*|0)
-let float = ({INT}\.[0-9]*|\.[0-9]+)
-let string = [a-zA-Z0-9\ \.\,\?\!\(\)]*
+let eol = [return lineFeed]
+let INT = ([1-9][0-9]*|0)
+let FLOAT = ({INT}\.[0-9]*|\.[0-9]+)
+let STRING = ['a'-'z' 'A'-'Z' '0'-'9''\' '\.' '\,' '\?' '\!' '\(' '\)']*
 let id = [a-zA-Z_][a-zA-Z_0-9]*
-let type = int|float|string
+let TYPE = INT|FLOAT|STRING
+}
 
 let keywords =[
 "break",BREAK;
@@ -55,9 +55,9 @@ rule token = parse
 |'('            {LPAR}
 |')'            {RPAR}
 | iden as i {
-        (* try keywords if not found then it's identifier *)
-        let l = String.lowercase i in
-        try List.assoc l keywords
-        with Not_found -> IDENTIFIER i
+    (* try keywords if not found then it's identifier *)
+    let l = String.lowercase i in
+    try List.assoc l keywords
+    with Not_found -> IDENTIFIER i
     }
-|eof->            {EOF}
+|eof->           {EOF}
