@@ -1,5 +1,6 @@
 {
   (* Header *)
+  open Core.Std
   open Lexing
   open Parser
 
@@ -19,15 +20,15 @@
 }
 
 let space = [' ' '\t']+
-let linebreak = '\r' | '\n' | '\r\n'
+let linebreak = '\r' | '\n'
 
-let comment = "\\\\" .* linebreak
-let longComment = "/*" (. | linebreak)* "*/"
+let comment = "\\\\" _* linebreak
+let longComment = "/*" (_ | linebreak)* "*/"
 
 let digit = ['0'-'9']
 let restrictedChar = ['a'-'z' 'A'-'Z' '0'-'9' '.' ',' '?' '!' '(' ')']
 let freeChar = restrictedChar | "\\"
-let escapedChar = '\\' ['a' 'b' 'f' 'n' 'r' 't' 'v' '\\' '’']
+let escapedChar = ['\007' '\b' '\012' '\n' '\r' '\t' '\011' '\\' '\096']
 
 let int = ['1' - '9'] digit*
 let octal = '0' digit+
@@ -40,7 +41,7 @@ let float = digit+ '.' digit* | digit* '.' digit+
   Single quote = rune (single char)
 *)
 let string = '"' ( escapedChar | restrictedChar | "\"" )* '"'
-let rawString = '’' ( escapedChar | freeChar )* '’'
+let rawString = '\096' ( escapedChar | freeChar )* '\096'
 let runeString = '\'' ( escapedChar | restrictedChar ) '\''
 
 let id = ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_']*
@@ -138,6 +139,7 @@ rule read =
   | "type"           { TYPE }
   | "var"            { VAR }
   | id               { ID Lexing.lexeme lexbug }
+  | eof              { (* What now? *) }
 
 {
   (* Trailer *)
