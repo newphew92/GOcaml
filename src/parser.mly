@@ -1,3 +1,4 @@
+(* Tokens *)
 %token <string> INT
 %token <string> OCTAL
 %token <string> HEXA
@@ -82,3 +83,14 @@
 %token TYPE
 %token VAR
 %token <string> ID
+
+(* Nodes type *)
+%type <int> prog
+
+%start prog
+%%
+
+(* Rules *)
+prog:
+  | EOF { }
+;

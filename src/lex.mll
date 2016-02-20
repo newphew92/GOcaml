@@ -61,7 +61,7 @@ rule read =
   | float           { FLOAT Lexing.lexeme lexbuf }
   | string          { STRING Lexing.lexeme lexbuf }
   | rawString       { RAWSTRING Lexing.lexeme lexbug }
-  | runseString     { RUNESTRING Lexing.lexeme lexbug }
+  | runeString     { RUNESTRING Lexing.lexeme lexbug }
   | type            { TYPE Lexing.lexeme lexbuf }
   | '+'             { PLUS }
   | '-'             { MINUS }
