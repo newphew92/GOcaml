@@ -80,7 +80,6 @@
 %token SELECT
 %token STRUCT
 %token SWITCH
-%token TYPE
 %token VAR
 %token <string> ID
 

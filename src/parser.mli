@@ -1,87 +1,95 @@
-type token =
-  | INT of (string)
-  | OCTAL of (string)
-  | HEXA of (string)
-  | FLOAT of (string)
-  | STRING of (string)
-  | RAWSTRING of (string)
-  | RUNESTRING of (string)
-  | TYPE of (string)
-  | PLUS
-  | MINUS
-  | STAR
-  | SLASH
-  | PERCENT
-  | AMPERSAND
-  | VERTICAL
-  | HAT
-  | LLT
-  | GGT
-  | AMPHAT
-  | PLUSEQ
-  | MINEQ
-  | STAREQ
-  | SLASHEQ
-  | PERE
-  | VERTEQ
-  | HATEQ
-  | LLTEQ
-  | GGTEQ
-  | AMPHATEQ
-  | AND
-  | OR
-  | LTMIN
-  | PPLUS
-  | MMINUS
-  | EEQUAL
-  | LT
-  | GT
-  | EQUAL
-  | NOT
-  | NOTE
-  | LTEQ
-  | GTEQ
-  | COLEQ
-  | DOTS
-  | LPAR
-  | RPAR
-  | RSQPA
-  | LSQPAR
-  | LCURL
-  | RCUR
-  | COMMA
-  | DOT
-  | SEMICOLON
-  | COLON
-  | APPEND
-  | EOF
-  | BREAK
-  | CASE
-  | CHAN
-  | CONST
-  | CONTINUE
-  | DEFAULT
-  | DEFER
-  | ELSE
-  | FALLTHROUGH
-  | FOR
-  | FUNC
-  | GO
-  | GOTO
-  | IF
-  | IMPORT
-  | INTERFACE
-  | MAP
-  | PACKAGE
-  | PRINT
-  | PRINTLN
-  | RANGE
-  | RETURN
-  | SELECT
-  | STRUCT
-  | SWITCH
-  | VAR
-  | ID of (string)
 
-val prog :
-  (Lexing.lexbuf  -> token) -> Lexing.lexbuf -> int
+(* The type of tokens. *)
+
+type token = 
+  | VERTICAL
+  | VERTEQ
+  | VAR
+  | TYPE of (string)
+  | SWITCH
+  | STRUCT
+  | STRING of (string)
+  | STAREQ
+  | STAR
+  | SLASHEQ
+  | SLASH
+  | SEMICOLON
+  | SELECT
+  | RUNESTRING of (string)
+  | RSQPA
+  | RPAR
+  | RETURN
+  | RCUR
+  | RAWSTRING of (string)
+  | RANGE
+  | PRINTLN
+  | PRINT
+  | PPLUS
+  | PLUSEQ
+  | PLUS
+  | PERE
+  | PERCENT
+  | PACKAGE
+  | OR
+  | OCTAL of (string)
+  | NOTE
+  | NOT
+  | MMINUS
+  | MINUS
+  | MINEQ
+  | MAP
+  | LTMIN
+  | LTEQ
+  | LT
+  | LSQPAR
+  | LPAR
+  | LLTEQ
+  | LLT
+  | LCURL
+  | INTERFACE
+  | INT of (string)
+  | IMPORT
+  | IF
+  | ID of (string)
+  | HEXA of (string)
+  | HATEQ
+  | HAT
+  | GTEQ
+  | GT
+  | GOTO
+  | GO
+  | GGTEQ
+  | GGT
+  | FUNC
+  | FOR
+  | FLOAT of (string)
+  | FALLTHROUGH
+  | EQUAL
+  | EOF
+  | ELSE
+  | EEQUAL
+  | DOTS
+  | DOT
+  | DEFER
+  | DEFAULT
+  | CONTINUE
+  | CONST
+  | COMMA
+  | COLON
+  | COLEQ
+  | CHAN
+  | CASE
+  | BREAK
+  | APPEND
+  | AND
+  | AMPHATEQ
+  | AMPHAT
+  | AMPERSAND
+
+(* This exception is raised by the monolithic API functions. *)
+
+exception Error
+
+(* The monolithic API. *)
+
+val prog: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (int)
