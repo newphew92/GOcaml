@@ -72,17 +72,15 @@ one of the operators and delimiters ++, --, ), ], or }*)
 prog:
   | packList decList statList EOF { print_endline "finish"}
 optionSemi:
-  | meol
-  | SEMICOLON
-meol:
-  | EOL meol
-  | {}
+  | EOL {}
+  | SEMICOLON {}
+  | SEMICOLON EOL {}
 optionBreak:
-  | meol {}
   | {}
+  | EOL {}
 packList: (*only one package declaration allowed*)
   | PACKAGE ID  packList {}
-  | meol {}
+  | EOL {}
 decList:
   | dec optionSemi decList {}
   | {}
@@ -93,7 +91,7 @@ dec:
 varD:(*variable declaration*)
   | VAR subVar optionSemi varD{}(*insert semi-colon only at the end of the sequence*)
   | VAR LPAR subVarList RPAR optionSemi varD {}
-  | meol{}
+  | EOL{}
   | {}
 subVarList:(*only for var declarations in parentheses*)
   | subVar option subVarList {}
@@ -111,17 +109,17 @@ expList:
 typeD:
   | TYPE ID typeG optionSemi typeD {}
   | TYPE ID STRUCT LCURL optionBreak subStruct RCURL optionSemi typeD {}
-  | meol{}
+  | {}
 subStruct: (*type declaration in structs, no var keyword*)
   | idList typeG optionSemi subStruct {}
-  | meol{}
+  | {}
 funD:
   | FUNC ID LPAR funARG RPAR returnT optionSemi {}
-  | FUNC ID LPAR funArg RPAR returnT LCURL meol funC returnStat optionBreak RCURL optionSemi{}(*what we're returning fom the function*)
+  | FUNC ID LPAR funArg RPAR returnT LCURL optionBreak funC returnStat optionBreak RCURL optionSemi{}(*what we're returning fom the function*)
 funC:/*function content*/
   | varD {}
   | expList {}
-  | meol{}
+  | EOL{}
 funArg:
   | idList typeG funArg {}
   | {}
@@ -205,7 +203,7 @@ unaryOp:
   | AMPERSAND {}
   | LTMIN {}
 ifStat:
-  | IF option(simpleStat SEMICOLON) exp block option(ifStat | block) {}
+  | IF option(simpleStat SEMICOLON optionBreak) exp block option(ifStat | block) {}
 block:
   | LCURL optionBreak statList optionBreak RCURL optionSemi{}
 switchStat:
