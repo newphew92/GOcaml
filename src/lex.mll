@@ -102,8 +102,8 @@ rule read =
   | "..."           { DOTS }
   | '('             { LPAR }
   | ')'             { RPAR }
-  | '['             { RSQPAR}
-  | ']'             { LSQPAR }
+  | '['             { LSQPAR}
+  | ']'             { RSQPAR }
   | '{'             { LCURL }
   | '}'             { RCURL}
   | ','             { COMMA }

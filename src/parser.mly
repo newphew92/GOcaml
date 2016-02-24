@@ -7,77 +7,50 @@
 %token <string> RAWSTRING
 %token <string> RUNESTRING
 %token <string> TYPE
-%token AMPERSAND
-%token AMPHAT
-%token AMPHATEQ
-%token AND
-%token APPEND
+%token AMPERSAND, AMPHAT, AMPHATEQ
+%token AND, OR,APPEND
 %token BREAK
-%token CASE
+%token CASE, SWITCH
 %token CHAN
-%token COLEQ
-%token COLON
-%token COMMA
+%token COLEQ, COLON, SEMICOLON,COMMA
 %token CONST
 %token CONTINUE
 %token DEFAULT
 %token DEFER
-%token DOT
-%token DOTS
-%token EEQUAL
-%token ELSE
+%token DOT, DOTS
+%token EEQUAL, EQUAL
+%token ELSE, IF
 %token EOF
-%token EQUAL
 %token FALLTHROUGH
 %token FOR
 %token FUNC
-%token GGT
-%token GGTEQ
-%token GO
-%token GOTO
-%token GT
-%token GTEQ
-%token HAT
-%token HATEQ
-%token IF
+%token GGT, GGTEQ
+%token GO, GOTO
+%token GT, GTEQ
+%token HAT, HATEQ
 %token IMPORT
 %token INTERFACE
-%token LCURL
-%token LLT
-%token LLTEQ
-%token LPAR
+%token LCURL, RCURL
+%token LLT, LLTEQ
+%token LPAR, RPAR
 %token LSQPAR
-%token LT
-%token LTEQ
+%token LT, LTEQ
 %token LTMIN
 %token MAP
-%token MINEQ
-%token MINUS
-%token MMINUS
-%token NOT
-%token NOTE
-%token OR
+%token MINEQ, MINUS, MMINUS
+%token NOT, NOTE
 %token PACKAGE
 %token PERCENT
 %token PERE
-%token PLUS
-%token PLUSEQ
-%token PPLUS
-%token PRINT
-%token PRINTLN
+%token PLUS, PLUSEQ, PPLUS
+%token PRINT, PRINTLN
 %token RANGE
-%token RCURL
 %token RETURN
-%token RPAR
 %token RSQPA
 %token SELECT
-%token SEMICOLON
-%token SLASH
-%token SLASHEQ
-%token STAR
-%token STAREQ
+%token SLASH, SLASHEQ
+%token STAR, STAREQ
 %token STRUCT
-%token SWITCH
 %token VAR
 %token VERTEQ
 %token VERTICAL
@@ -88,68 +61,159 @@
 
 %start prog
 %%
+(*The formal grammar uses semicolons ; as terminators in a number of productions. Go programs may omit most of these semicolons using the following two rules:
 
+When the input is broken into tokens, a semicolon is automatically inserted into the token stream immediately after a line's final token if that token is
+an identifier
+an integer, floating-point, imaginary, rune, or string literal
+one of the keywords break, continue, fallthrough, or return
+one of the operators and delimiters ++, --, ), ], or }*)
 (* Rules *)
 prog:
-  | packList decList statList EOF { }
-packList:
-  | pack packList {}
-  | pack {}
-pack:
-  | PACKAGE ID {}
+  | packList decList statList EOF { print_endline "finish"}
+optionSemi:
+  | meol
+  | SEMICOLON
+meol:
+  | EOL meol
   | {}
+optionBreak:
+  | meol {}
+  | {}
+packList: (*only one package declaration allowed*)
+  | PACKAGE ID  packList {}
+  | meol {}
 decList:
-  | dec decList {}
-  | dec {}
+  | dec optionSemi decList {}
+  | {}
 dec:
   | varD {}
   | typeD {}
   | funD {}
+varD:(*variable declaration*)
+  | VAR subVar optionSemi varD{}(*insert semi-colon only at the end of the sequence*)
+  | VAR LPAR subVarList RPAR optionSemi varD {}
+  | meol{}
   | {}
-varD:
-  | VAR subVar varD {}
-  | VAR LPAR subVarList RPAR varD {}
-  | {}
-subVarList:
-  | subVar subVarList {}
-  | subVar {}
-subVar:
+subVarList:(*only for var declarations in parentheses*)
+  | subVar option subVarList {}
+  | subVar option{}
+subVar:(*likewise, only relevant for group declarations*)
   | idList typeG {}
   | idList EQUAL expList {}
   | idList typeG EQUAL expList {}
-idList:
-  | ID typeG typeD {}
+idList:(*only use for inline stuff*)
+  | ID COMMA idList {}
   | ID {}
 expList:
-  | exp expList {}
+  | exp COMMA expList {}
   | exp {}
 typeD:
-  | TYPE ID typeG typeD {}
-  | TYPE ID STRUCT LCURL subStruct RCURL typeD {}
-  | {}
-subStruct:
-  | idList typeG subStruct {}
-  | {}
+  | TYPE ID typeG optionSemi typeD {}
+  | TYPE ID STRUCT LCURL optionBreak subStruct RCURL optionSemi typeD {}
+  | meol{}
+subStruct: (*type declaration in structs, no var keyword*)
+  | idList typeG optionSemi subStruct {}
+  | meol{}
 funD:
-  | FUNC ID LPAR funArg RPAR returnT LCURL funC RETURN funID RCURL {}
-/*function content*/
-funC:
+  | FUNC ID LPAR funARG RPAR returnT optionSemi {}
+  | FUNC ID LPAR funArg RPAR returnT LCURL meol funC returnStat optionBreak RCURL optionSemi{}(*what we're returning fom the function*)
+funC:/*function content*/
   | varD {}
   | expList {}
-  | {}
+  | meol{}
 funArg:
   | idList typeG funArg {}
   | {}
-returnT:
+returnT:(*no linebreaks allowed in go after function return type*)
   | typeG {}
   | {}
-funID:
-  | ID {}
-  | {}
-typeG:
-  | TYPE {}
+returnStat:(*what we're returning fom the function*)
+  | RETURN ID optionSemi{}
+  | RETURN exp optionSemi{}
+  | RETURN optionSemi{}
+typeG: (*basic types*)
+  | INT {}
+  | FLOAT {}
+  | STRING {}
+  | BOOL {}
+  | RUNE {}
+  | LSQPAR RSQPAR {} (*slice*)
+  | LSQPAR INT RSQPAR {} (*array*)
 statList:
+  | stat option statList {}
+stat:
+  | dec {} (*; or lb*)
+  | print {}(*; or lb*)
+  | returnStat {}(*; or lb*)
+  | ifStat {}
+  | switchStat {}
+  | forStat {}
+  | breakStat {}
+  | continueStat {}
+simpleStat:
+  | exp optionSemi{}
+  | assign optionSemi{}
+  | decShort optionSemi{}
+  | incDec optionSemi{}
   | {}
+incDec:
+  | exp PPLUS
+  | exp MMINUS
+print:
+  | PRINT LPAREN expList RPAREN optionSemi {}
+  | PRINTLN LPAREN expList RPAREN optionSemi {}
+decShort: (*can't do this in top level*)
+  | idList COLEQ expList optionSemi{}
 exp:
+  | unary optionSemi{}
+  | exp binary exp optionSemi{}
+unary:
+  | primExp {}
+  | unaryOp unaryExp {}
+binary:
+  | OR  {}
+  | AND {}
+  | relOp {}
+  | addOp {}
+  | mulOp {}
+relOp:
+  | EEQUAL {}
+  | NOTEQ {}
+  | LT {}
+  | LTEQ {}
+  | GT {}
+  | GTEQ {}
+addOp:
+  | PLUS {}
+  | MINUS {}
+  | VERTICAL {}
+  | HAT {}
+mulOp:
+  | STAR {}
+  | SLASH {}
+  | AMPERSAND {}
+  | AMPHAT {}
+  | LLT {} (*<<*)
+  | GGT {} (*>>*)
+unaryOp:
+  | PLUS {}
+  | MIUS {}
+  | NOT {}
+  | HAT {}
+  | STAR {}
+  | AMPERSAND {}
+  | LTMIN {}
+ifStat:
+  | IF option(simpleStat SEMICOLON) exp block option(ifStat | block) {}
+block:
+  | LCURL optionBreak statList optionBreak RCURL optionSemi{}
+switchStat:
+  | {}
+forStat:
+  | {}
+breakStat:
+  | {}
+continueStat:
   |{}
 ;
