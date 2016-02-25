@@ -54,7 +54,6 @@
 %token SEMICOLON
 %token COLON
 %token APPEND
-%token EOF
 %token BREAK
 %token CASE
 %token CHAN
@@ -93,5 +92,5 @@
 
 (* Rules *)
 prog:
-  | EOF { }
+  | EOF { 1 }
 ;
