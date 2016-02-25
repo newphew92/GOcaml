@@ -24,8 +24,8 @@
 let inLongComment = _*
 let inShortComment = [^ '\n' '\r']*
 
-let shortComment = "//" inShortComment
 let longComment = "/*" inLongComment "*/"
+let shortComment = "//" inShortComment
 let comment = shortComment | longComment
 
 (* Separators *)

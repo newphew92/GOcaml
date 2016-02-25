@@ -1,1 +1,3 @@
 ./syntax.pdf
+src/*.mli
+src/*.ml

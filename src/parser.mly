@@ -7,8 +7,58 @@
 %token <string> RAWSTRING
 %token <string> RUNESTRING
 %token <string> TYPE
+<<<<<<< HEAD
 %token AMPERSAND, AMPHAT, AMPHATEQ
 %token AND, OR,APPEND
+=======
+%token PLUS
+%token MINUS
+%token STAR
+%token SLASH
+%token PERCENT
+%token AMPERSAND
+%token VERTICAL
+%token HAT
+%token LLT
+%token GGT
+%token AMPHAT
+%token PLUSEQ
+%token MINEQ
+%token STAREQ
+%token SLASHEQ
+%token PERE
+%token VERTEQ
+%token HATEQ
+%token LLTEQ
+%token GGTEQ
+%token AMPHATEQ
+%token AND
+%token OR
+%token LTMIN
+%token PPLUS
+%token MMINUS
+%token EEQUAL
+%token LT
+%token GT
+%token EQUAL
+%token NOT
+%token NOTE
+%token LTEQ
+%token GTEQ
+%token COLEQ
+%token DOTS
+%token LPAR
+%token RPAR
+%token RSQPA
+%token LSQPAR
+%token LCURL
+%token RCUR
+%token COMMA
+%token DOT
+%token SEMICOLON
+%token COLON
+%token APPEND
+>>>>>>> 0bcb686dd3ed3f7f0d40d69697ae521901d81fda
 %token BREAK
 %token CASE, SWITCH
 %token CHAN
@@ -241,4 +291,5 @@ continueStat:
   | {}
 assign:
   | {}
+
 ;
