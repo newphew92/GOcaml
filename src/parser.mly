@@ -79,6 +79,7 @@
 %token SELECT
 %token STRUCT
 %token SWITCH
+%token TYPET
 %token VAR
 %token EOF
 %token EOL

@@ -1,5 +1,6 @@
 {
   (* Header *)
+
   open Core.Std
   open Lexing
   open Parser
@@ -12,7 +13,6 @@
       { pos with pos_bol = lexbuf.lex_curr_pos;
                  pos_lnum = pos.pos_lnum + 1
       }
-
 
   let syntaxError msg = raise (SyntaxError (msg ^ " on line " ^ (string_of_int next_line)))
 
@@ -76,14 +76,14 @@ rule read =
   | semicolonRec    { SEMICOLON }
   | linebreakRec    { EOL }
   | comment         { read lexbuf }
-  | int             { INT Lexing.lexeme lexbuf }
-  | octal           { OCTAL Lexing.lexeme lexbuf }
-  | hexa            { HEXA Lexing.lexeme lexbuf }
-  | float           { FLOAT Lexing.lexeme lexbuf }
-  | interpretString { STRING Lexing.lexeme lexbuf }
-  | rawString       { RAWSTRING Lexing.lexeme lexbug }
-  | runeString      { RUNESTRING Lexing.lexeme lexbug }
-  | type            { TYPE Lexing.lexeme lexbuf }
+  | int             { INT (Lexing.lexeme lexbuf) }
+  | octal           { OCTAL (Lexing.lexeme lexbuf) }
+  | hexa            { HEXA (Lexing.lexeme lexbuf) }
+  | float           { FLOAT (Lexing.lexeme lexbuf) }
+  | interpretString { STRING (Lexing.lexeme lexbuf) }
+  | rawString       { RAWSTRING (Lexing.lexeme lexbuf) }
+  | runeString      { RUNESTRING (Lexing.lexeme lexbuf) }
+  | type            { TYPE (Lexing.lexeme lexbuf) }
   | '+'             { PLUS }
   | '-'             { MINUS }
   | '*'             { STAR }
@@ -156,9 +156,9 @@ rule read =
   | "select"         { SELECT }
   | "struct"         { STRUCT }
   | "switch"         { SWITCH }
-  | "type"           { TYPE }
+  | "type"           { TYPET }
   | "var"            { VAR }
-  | id               { ID Lexing.lexeme lexbug }
+  | id               { ID (Lexing.lexeme lexbug) }
   | eof              { EOF }
 
 {
