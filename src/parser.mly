@@ -20,7 +20,7 @@
 %token DOT, DOTS
 %token EEQUAL, EQUAL
 %token ELSE, IF
-%token EOF
+%token EOF, EOL
 %token FALLTHROUGH
 %token FOR
 %token FUNC
@@ -54,6 +54,7 @@
 %token VAR
 %token VERTEQ
 %token VERTICAL
+
 %token <string> ID
 
 (* Nodes type *)
@@ -235,7 +236,7 @@ forOption:
 forClause:
   | option(simpleStat) SEMICOLON option(exp) SEMICOLON option(simpleStat)
 breakStat:
-  | {}
+  | BREAK option(ID){}
 continueStat:
   | {}
 assign:
