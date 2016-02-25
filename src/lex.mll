@@ -19,34 +19,35 @@
   (* End Header *)
 }
 
+(* Comment *)
+let inLongComment = _*
+let inShortComment = [^ '\n' '\r']*
+
+let shortComment = "//" inShortComment
+let longComment = "/*" inLongComment "*/"
+let comment = shortComment | longComment
+
 (* Separators *)
 let space = [' ' '\t']+
 let linebreak = ['\r' '\n']
 let semicolon = ';'
 
-let linebreakRec = (linebreak (linebreak | comment)*) | (comment+ linebreakRec)
+let linebreakRec = (linebreak | comment)* linebreak (linebreak | comment)*
 let semicolonRec = linebreakRec* semicolon linebreakRec*
-
-(* Comment *)
-let inLongComment = [^ '*']* ('*' inLongCommentRec)?
-let inLongCommentRec = [^ '/'] inLongComment?
-let inShortComment = [^ '\n' '\r']*
-
-let shortComment = "//" inShortComment
-let longComment = "/*" inLongCommentLayer1 "*/"
-let comment = shortComment | longComment
 
 (* Building blocks for literals *)
 let digit = ['0'-'9']
 let letter = ['a'-'z' 'A'-'Z']
-let punct = ['.' ',' '!' '?' ':' ';' '«' '»' ' ' '"' '\'' '\096']
-let symbol = ['+' '-' '/' '*' '±' '#' '£' '¢' '¤' '¬' '&' '%' '$' '<' '>' '=' '~' '(' ')' '{' '}' '[' ']' '@' '^' '_' '°']
+let punct = ['.' ',' '!' '?' ':' ';' ' ' '"' '\'' '\096']
+let symbol = ['+' '-' '/' '*' '#' '&' '%' '$' '<' '>' '=' '~' '(' ')' '{' '}' '[' ']' '@' '^' '_']
 
 let char = digit | letter | punct | symbol
-let escapedCharId = ['a' 'b' 'f' 'n' 'r' 't' 'v' '\\' '’']
+let charNoDoubleQuote = digit | letter | (punct # '"') | symbol
+let charNoBackQuote = digit | letter | (punct # '\096') | symbol
+let escapedCharId = ['a' 'b' 'f' 'n' 'r' 't' 'v' '\\' '\096']
 
-let inInterpretString = ( ('\\' (escapedCharId | '"') ) | (char # '"') )*
-let inRawString = ( (char # '\096') | '\\' )*
+let inInterpretString = ( ('\\' (escapedCharId | '"') ) | charNoDoubleQuote )*
+let inRawString = ( charNoBackQuote | '\\' )*
 let inRuneString = ( '\\' (escapedCharId | '\'') ) | char
 
 (* Number literals *)
