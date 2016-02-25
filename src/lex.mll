@@ -19,49 +19,69 @@
   (* End Header *)
 }
 
+(* Separators *)
 let space = [' ' '\t']+
-let linebreak = '\r' | '\n'
+let linebreak = ['\r' '\n']
+let semicolon = ';'
 
-let comment = "\\\\" _* linebreak
-let longComment = "/*" (_ | linebreak)* "*/"
+let linebreakRec = (linebreak (linebreak | comment)*) | (comment+ linebreakRec)
+let semicolonRec = linebreakRec* semicolon linebreakRec*
 
+(* Comment *)
+let inLongComment = [^ '*']* ('*' inLongCommentRec)?
+let inLongCommentRec = [^ '/'] inLongComment?
+let inShortComment = [^ '\n' '\r']*
+
+let shortComment = "//" inShortComment
+let longComment = "/*" inLongCommentLayer1 "*/"
+let comment = shortComment | longComment
+
+(* Building blocks for literals *)
 let digit = ['0'-'9']
-let restrictedChar = ['a'-'z' 'A'-'Z' '0'-'9' '.' ',' '?' '!' '(' ')']
-let freeChar = restrictedChar | "\\"
-let escapedChar = ['\007' '\b' '\012' '\n' '\r' '\t' '\011' '\\' '\096']
+let letter = ['a'-'z' 'A'-'Z']
+let punct = ['.' ',' '!' '?' ':' ';' '«' '»' ' ' '"' '\'' '\096']
+let symbol = ['+' '-' '/' '*' '±' '#' '£' '¢' '¤' '¬' '&' '%' '$' '<' '>' '=' '~' '(' ')' '{' '}' '[' ']' '@' '^' '_' '°']
 
+let char = digit | letter | punct | symbol
+let escapedCharId = ['a' 'b' 'f' 'n' 'r' 't' 'v' '\\' '’']
+
+let inInterpretString = ( ('\\' (escapedCharId | '"') ) | (char # '"') )*
+let inRawString = ( (char # '\096') | '\\' )*
+let inRuneString = ( '\\' (escapedCharId | '\'') ) | char
+
+(* Number literals *)
 let int = ['1' - '9'] digit*
 let octal = '0' digit+
 let hexa = '0' ( 'x' | 'X' ) digit+
 let float = digit+ '.' digit* | digit* '.' digit+
 
 (*
+  String/rune literals
   Double quote = intepreted strings
-  Back quote = raw string
+  Back quote (\096) = raw string
   Single quote = rune (single char)
 *)
-let string = '"' ( escapedChar | restrictedChar | "\"" )* '"'
-let rawString = '\096' ( escapedChar | freeChar )* '\096'
-let runeString = '\'' ( escapedChar | restrictedChar ) '\''
+let interpretString = '"' inInterpretString '"'
+let rawString = '\096' inRawString '\096'
+let runeString = '\'' inRuneString '\''
 
-let id = ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_']*
+let id = ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_' '-']*
 
 let type = "int" | "float64" | "bool" | "rune" | "string"
 
- (* match%sedlex lexbuf with *)
 rule read =
   parse
   | space           { read lexbuf }
-  | linebreak       { next_line lexbuf; read lexbuf }
-  | comment         { next_line lexbuf; read lexbuf }
-  | longComment     { read lexbuf }
+  | semicolonRec    { SEMICOLON }
+  | linebreakRec    { EOL }
+  | comment         { read lexbuf }
   | int             { INT Lexing.lexeme lexbuf }
   | octal           { OCTAL Lexing.lexeme lexbuf }
   | hexa            { HEXA Lexing.lexeme lexbuf }
   | float           { FLOAT Lexing.lexeme lexbuf }
-  | string          { STRING Lexing.lexeme lexbuf }
+  | interpretString { STRING Lexing.lexeme lexbuf }
   | rawString       { RAWSTRING Lexing.lexeme lexbug }
-  | runeString     { RUNESTRING Lexing.lexeme lexbug }
+  | runeString      { RUNESTRING Lexing.lexeme lexbug }
   | type            { TYPE Lexing.lexeme lexbuf }
   | '+'             { PLUS }
   | '-'             { MINUS }
@@ -107,7 +127,6 @@ rule read =
   | '}'             { RCURL}
   | ','             { COMMA }
   | '.'             { DOT }
-  | ';'             { SEMICOLON }
   | ':'             { COLON }
   | "append"         { APPEND }
   | "eof"            { EOF }
@@ -139,7 +158,7 @@ rule read =
   | "type"           { TYPE }
   | "var"            { VAR }
   | id               { ID Lexing.lexeme lexbug }
-  | eof              { (* What now? *) }
+  | eof              { EOF }
 
 {
   (* Trailer *)

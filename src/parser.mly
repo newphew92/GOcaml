@@ -81,6 +81,8 @@
 %token STRUCT
 %token SWITCH
 %token VAR
+%token EOF
+%token EOL
 %token <string> ID
 
 (* Nodes type *)
