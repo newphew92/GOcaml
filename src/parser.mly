@@ -74,13 +74,9 @@ prog:
 optionSemi:
   | EOL {}
   | SEMICOLON {}
-  | SEMICOLON EOL {}
-optionBreak:
-  | {}
-  | EOL {}
 packList: (*only one package declaration allowed*)
   | PACKAGE ID  packList {}
-  | EOL {}
+  | {}
 decList:
   | dec optionSemi decList {}
   | {}
@@ -89,42 +85,38 @@ dec:
   | typeD {}
   | funD {}
 varD:(*variable declaration*)
-  | VAR subVar optionSemi varD{}(*insert semi-colon only at the end of the sequence*)
-  | VAR LPAR subVarList RPAR optionSemi varD {}
-  | EOL{}
+  | VAR subVar {}(*insert semi-colon only at the end of the sequence*)
+  | VAR LPAR option(EOL) subVarList option(EOL) RPAR  {}
   | {}
 subVarList:(*only for var declarations in parentheses*)
-  | subVar option subVarList {}
-  | subVar option{}
+  | subVar optionSemi subVarList {}
+  | {}
 subVar:(*likewise, only relevant for group declarations*)
   | idList typeG {}
   | idList EQUAL expList {}
   | idList typeG EQUAL expList {}
 idList:(*only use for inline stuff*)
-  | ID COMMA idList {}
+  | ID COMMA option(EOL) idList {}
   | ID {}
 expList:
-  | exp COMMA expList {}
+  | exp COMMA option(EOL) expList {}
   | exp {}
 typeD:
   | TYPE ID typeG optionSemi typeD {}
-  | TYPE ID STRUCT LCURL optionBreak subStruct RCURL optionSemi typeD {}
+  | TYPE ID STRUCT LCURL option(EOL) subStruct RCURL optionSemi typeD {}
   | {}
 subStruct: (*type declaration in structs, no var keyword*)
   | idList typeG optionSemi subStruct {}
   | {}
-funD:
-  | FUNC ID LPAR funARG RPAR returnT optionSemi {}
-  | FUNC ID LPAR funArg RPAR returnT LCURL optionBreak funC returnStat optionBreak RCURL optionSemi{}(*what we're returning fom the function*)
+funD:(*function declaration *)
+  | FUNC ID LPAR funArg RPAR option(typeG) optionSemi {}
+  | FUNC ID LPAR funArg RPAR option(typeG) LCURL option(EOL) funC returnStat option(EOL) RCURL optionSemi{}(*what we're returning fom the function*)
 funC:/*function content*/
   | varD {}
   | expList {}
   | EOL{}
 funArg:
-  | idList typeG funArg {}
-  | {}
-returnT:(*no linebreaks allowed in go after function return type*)
-  | typeG {}
+  | idList typeG COMMA funArg {}
   | {}
 returnStat:(*what we're returning fom the function*)
   | RETURN ID optionSemi{}
@@ -150,25 +142,25 @@ stat:
   | breakStat {}
   | continueStat {}
 simpleStat:
-  | exp optionSemi{}
-  | assign optionSemi{}
-  | decShort optionSemi{}
-  | incDec optionSemi{}
+  | exp{}
+  | assign{}
+  | decShort{}
+  | incDec{}
   | {}
 incDec:
-  | exp PPLUS
-  | exp MMINUS
+  | exp PPLUS {}
+  | exp MMINUS {}
 print:
-  | PRINT LPAREN expList RPAREN optionSemi {}
-  | PRINTLN LPAREN expList RPAREN optionSemi {}
+  | PRINT LPAR option(EOL) expList RPAR optionSemi {}
+  | PRINTLN LPAR option(EOL) expList RPAR optionSemi {}
 decShort: (*can't do this in top level*)
-  | idList COLEQ expList optionSemi{}
+  | idList COLEQ option(EOL) expList optionSemi{}
 exp:
   | unary optionSemi{}
   | exp binary exp optionSemi{}
 unary:
   | primExp {}
-  | unaryOp unaryExp {}
+  | unaryOp unary {}
 binary:
   | OR  {}
   | AND {}
@@ -203,15 +195,49 @@ unaryOp:
   | AMPERSAND {}
   | LTMIN {}
 ifStat:
-  | IF option(simpleStat SEMICOLON optionBreak) exp block option(ifStat | block) {}
+  | IF option(test) exp block option(elseOption) {} (*no lb after exp*)
+test:
+  |simpleStat SEMICOLON option(EOL) {}
+elseOption:
+  | ELSE ifStat {}
+  | ELSE block  {}
 block:
-  | LCURL optionBreak statList optionBreak RCURL optionSemi{}
+  | LCURL option(EOL) statList option(EOL) RCURL optionSemi{}
 switchStat:
+  | expSwitchStat {}
+  | typeSwitchStat {}
+expSwitchStat:
+  | SWITCH option(switchOption) option(exp) LCURL option(EOL) expCaseClause option(EOL) RCURL optionSemi {}
+switchOption:
+  | simpleStat SEMICOLON {}
+expCaseClause:
+  | expSwitchCase COLON statList expCaseClause{}
   | {}
+expSwitchCase:
+  | CASE expList {}
+  | DEFAULT {}
+typeSwitchStat:
+  | SWITCH option(switchOption) typeSwitchGuard LCURL option(EOL) typeCaseClause option(EOL) RCURL optionSemi {}
+typeCaseClause:
+  | typeSwitchCase COLON statList
+typeSwitchCase:
+  | CASE typeList
+  | DEFAULT {}
+typeList:
+  | typeG COMMA typeList {}
+  | typeG (*check back on this one, might allow trailing commas*)
 forStat:
-  | {}
+  | FOR forOption block{}
+forOption:
+  | exp {}
+  | forClause {}
+  /*| rangeClause {} no range in golite*/
+forClause:
+  | option(simpleStat) SEMICOLON option(exp) SEMICOLON option(simpleStat)
 breakStat:
   | {}
 continueStat:
-  |{}
+  | {}
+assign:
+  | {}
 ;
