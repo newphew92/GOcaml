@@ -5,6 +5,7 @@ type token =
   | VERTICAL
   | VERTEQ
   | VAR
+  | TYPET
   | TYPE of (string)
   | SWITCH
   | STRUCT
@@ -16,6 +17,7 @@ type token =
   | SEMICOLON
   | SELECT
   | RUNESTRING of (string)
+  | RSQPAR
   | RSQPA
   | RPAR
   | RETURN
@@ -32,7 +34,7 @@ type token =
   | PACKAGE
   | OR
   | OCTAL of (string)
-  | NOTE
+  | NOTEQ
   | NOT
   | MMINUS
   | MINUS
@@ -65,6 +67,7 @@ type token =
   | FLOAT of (string)
   | FALLTHROUGH
   | EQUAL
+  | EOL
   | EOF
   | ELSE
   | EEQUAL

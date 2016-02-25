@@ -7,58 +7,8 @@
 %token <string> RAWSTRING
 %token <string> RUNESTRING
 %token <string> TYPE
-<<<<<<< HEAD
 %token AMPERSAND, AMPHAT, AMPHATEQ
 %token AND, OR,APPEND
-=======
-%token PLUS
-%token MINUS
-%token STAR
-%token SLASH
-%token PERCENT
-%token AMPERSAND
-%token VERTICAL
-%token HAT
-%token LLT
-%token GGT
-%token AMPHAT
-%token PLUSEQ
-%token MINEQ
-%token STAREQ
-%token SLASHEQ
-%token PERE
-%token VERTEQ
-%token HATEQ
-%token LLTEQ
-%token GGTEQ
-%token AMPHATEQ
-%token AND
-%token OR
-%token LTMIN
-%token PPLUS
-%token MMINUS
-%token EEQUAL
-%token LT
-%token GT
-%token EQUAL
-%token NOT
-%token NOTE
-%token LTEQ
-%token GTEQ
-%token COLEQ
-%token DOTS
-%token LPAR
-%token RPAR
-%token RSQPA
-%token LSQPAR
-%token LCURL
-%token RCUR
-%token COMMA
-%token DOT
-%token SEMICOLON
-%token COLON
-%token APPEND
->>>>>>> 0bcb686dd3ed3f7f0d40d69697ae521901d81fda
 %token BREAK
 %token CASE, SWITCH
 %token CHAN
@@ -83,12 +33,12 @@
 %token LCURL, RCURL
 %token LLT, LLTEQ
 %token LPAR, RPAR
-%token LSQPAR
+%token LSQPAR, RSQPAR
 %token LT, LTEQ
 %token LTMIN
 %token MAP
 %token MINEQ, MINUS, MMINUS
-%token NOT, NOTE
+%token NOT, NOTEQ
 %token PACKAGE
 %token PERCENT
 %token PERE
@@ -101,6 +51,7 @@
 %token SLASH, SLASHEQ
 %token STAR, STAREQ
 %token STRUCT
+%token TYPET
 %token VAR
 %token VERTEQ
 %token VERTICAL
@@ -121,24 +72,35 @@ one of the keywords break, continue, fallthrough, or return
 one of the operators and delimiters ++, --, ), ], or }*)
 (* Rules *)
 prog:
-  | packList decList statList EOF { print_endline "finish"}
+  | packDec optionSemi option(importDec) optionSemi option(decList) optionSemi statList EOF { print_endline "finish"}
 optionSemi:
   | EOL {}
   | SEMICOLON {}
-packList: (*only one package declaration allowed*)
-  | PACKAGE ID  packList {}
+packDec: (*only one package declaration allowed*)
+  | PACKAGE ID   {}
   | {}
+importDec:
+  | IMPORT importSpec {}
+  | IMPORT LPAR option(importSpecList) RPAR {}
+importSpecList:
+  | importSpec optionSemi importSpecList {}
+  | importSpec optionSemi {}
+
+
+importSpec:
+  | DOT stringLit {}
+  | ID stringLit {}
+  | stringLit{}
 decList:
   | dec optionSemi decList {}
-  | {}
+  | dec {}
 dec:
   | varD {}
-  | typeD {}
+  | typeDec {}
   | funD {}
 varD:(*variable declaration*)
   | VAR subVar {}(*insert semi-colon only at the end of the sequence*)
   | VAR LPAR option(EOL) subVarList option(EOL) RPAR  {}
-  | {}
 subVarList:(*only for var declarations in parentheses*)
   | subVar optionSemi subVarList {}
   | {}
@@ -152,14 +114,16 @@ idList:(*only use for inline stuff*)
 expList:
   | exp COMMA option(EOL) expList {}
   | exp {}
-typeD:
-  | TYPE ID typeG optionSemi typeD {}
-  | TYPE ID STRUCT LCURL option(EOL) subStruct RCURL optionSemi typeD {}
-  | {}
-subStruct: (*type declaration in structs, no var keyword*)
-  | idList typeG optionSemi subStruct {}
-  | {}
-funD:(*function declaration *)
+typeDec:
+  | TYPET ID TYPE optionSemi typeDec {}
+  | TYPET LPAR option(typeSpecList) RPAR
+  | TYPET ID structType  {}
+  /*| {}*/
+typeSpecList:
+  | ID TYPE optionSemi typeSpecList
+  | ID TYPE optionSemi{}
+
+(*funD:(*function declaration *)
   | FUNC ID LPAR funArg RPAR option(typeG) optionSemi {}
   | FUNC ID LPAR funArg RPAR option(typeG) LCURL option(EOL) funC returnStat option(EOL) RCURL optionSemi{}(*what we're returning fom the function*)
 funC:/*function content*/
@@ -168,21 +132,37 @@ funC:/*function content*/
   | EOL{}
 funArg:
   | idList typeG COMMA funArg {}
-  | {}
-returnStat:(*what we're returning fom the function*)
+  | {}*)
+funD:
+  | FUNC ID funcC {}
+  | FUNC ID signature {}
+funcC :
+  | signature block {}
+signature:
+  | parameters option(result) {}
+result:
+  | parameters {}
+  | TYPE {}
+parameters:
+  | LPAR option(paramList) RPAR {}
+paramOption:
+  | paramList option(COMMA) {}
+paramList:
+  | paramDec COMMA paramList {}
+  | paramDec {}
+paramDec:
+  | option(idList) option(DOTS) TYPE {}
+returnStat:(*what we're returning fom the funcC {}*)
   | RETURN ID optionSemi{}
   | RETURN exp optionSemi{}
   | RETURN optionSemi{}
 typeG: (*basic types*)
-  | INT {}
-  | FLOAT {}
-  | STRING {}
-  | BOOL {}
-  | RUNE {}
+  | TYPE {}
   | LSQPAR RSQPAR {} (*slice*)
   | LSQPAR INT RSQPAR {} (*array*)
 statList:
-  | stat option statList {}
+  | stat optionSemi statList {}
+  | stat optionSemi {}
 stat:
   | dec {} (*; or lb*)
   | print {}(*; or lb*)
@@ -197,7 +177,6 @@ simpleStat:
   | assign{}
   | decShort{}
   | incDec{}
-  | {}
 incDec:
   | exp PPLUS {}
   | exp MMINUS {}
@@ -212,6 +191,94 @@ exp:
 unary:
   | primExp {}
   | unaryOp unary {}
+primExp:
+  | operand {}
+  | conversion (*typecase*) {}
+  | primExp selector {}
+  | primExp index {}
+  | primExp slice {}
+  | primExp arg {}
+conversion:
+  | TYPE LPAR exp option(COMMA) RPAR {}
+selector:
+  | DOT ID {}
+index:
+  | LSQPAR exp RSQPAR {}
+slice:
+  | LSQPAR option(exp) COLON option(exp) {}
+  | option(exp) COLON exp COLON exp RSQPAR {}
+arg:
+  | LPAR option(argOption) RPAR {}
+argOption:
+  | expList option(DOTS) option(COMMA) {}
+  | TYPE option(DOTS) option(COMMA) {}
+  | TYPE COMMA expList option(DOTS) option(COMMA) {}
+operand: (*TODO*)
+  | literal {}
+  | methodExp {}
+  | operandName {}
+  | LPAR exp RPAR {}
+literal:
+  | basicLit {}
+  | compositeLit {}
+  | funcLit {}
+basicLit:
+  | INT {}
+  | FLOAT {}
+  | RUNESTRING {}
+  | OCTAL {}
+  | HEXA {}
+  | stringLit {}
+stringLit:
+  | RAWSTRING {}
+  | STRING {}
+compositeLit:
+  | literalType literalValue {}
+literalType:
+  | structType {} (*TODO NOW*)
+  | LSQPAR exp RSQPAR TYPE {} (*array type*)
+  | LSQPAR DOTS RSQPAR TYPE {}
+  | LSQPAR RSQPAR TYPE {}(*slice type*)
+  /*| mapType {}*/
+  | typeName {}
+structType:
+  | STRUCT LCURL option(EOL) option(fieldDecList) option(EOL)  RCURL optionSemi{}
+fieldDecList:
+  | fieldDecListOption optionSemi fieldDecList option(stringLit) {}
+  | fieldDecListOption optionSemi option(stringLit) {}
+fieldDecListOption:
+  | idList TYPE  {}
+  | option(STAR) TYPE {}
+literalValue:
+  | LCURL option(EOL) optionLitVal RCURL {}
+optionLitVal:
+  | elementList option(COMMA) {}
+elementList:
+  | keyedElement COMMA elementList {}
+  | keyedElement {}
+keyedElement:
+  | keyOption element {}
+keyOption:
+  | ID COLON {}
+  | exp COLON {}
+  | literalValue COLON {}
+  | {}
+element:
+  | exp {}
+  | literalValue {}
+funcLit: FUNC funcC {}
+methodExp:
+  | receiverType DOT ID {}
+receiverType:
+  | typeName {}
+  | LPAR STAR typeName RPAR {}
+  | LPAR receiverType RPAR {}
+typeName:
+  | ID {}
+  | ID DOT ID (*package.id*) {}
+operandName:
+  | ID {}
+  | ID DOT ID (*package.id*) {}
 binary:
   | OR  {}
   | AND {}
@@ -239,28 +306,26 @@ mulOp:
   | GGT {} (*>>*)
 unaryOp:
   | PLUS {}
-  | MIUS {}
+  | MINUS {}
   | NOT {}
   | HAT {}
   | STAR {}
   | AMPERSAND {}
   | LTMIN {}
 ifStat:
-  | IF option(test) exp block option(elseOption) {} (*no lb after exp*)
-test:
-  |simpleStat SEMICOLON option(EOL) {}
+  | IF option(simpleStatSemi) exp block option(elseOption) {} (*no lb after exp*)
+simpleStatSemi:
+  |simpleStat optionSemi {}
 elseOption:
   | ELSE ifStat {}
   | ELSE block  {}
 block:
-  | LCURL option(EOL) statList option(EOL) RCURL optionSemi{}
+  | LCURL option(EOL) option(statList) option(EOL) RCURL optionSemi{}
 switchStat:
   | expSwitchStat {}
   | typeSwitchStat {}
 expSwitchStat:
-  | SWITCH option(switchOption) option(exp) LCURL option(EOL) expCaseClause option(EOL) RCURL optionSemi {}
-switchOption:
-  | simpleStat SEMICOLON {}
+  | SWITCH option(simpleStatSemi) option(exp) LCURL option(EOL) expCaseClause option(EOL) RCURL optionSemi {}
 expCaseClause:
   | expSwitchCase COLON statList expCaseClause{}
   | {}
@@ -268,15 +333,20 @@ expSwitchCase:
   | CASE expList {}
   | DEFAULT {}
 typeSwitchStat:
-  | SWITCH option(switchOption) typeSwitchGuard LCURL option(EOL) typeCaseClause option(EOL) RCURL optionSemi {}
+  | SWITCH option(simpleStatSemi) typeSwitchGuard LCURL option(EOL) typeCaseClause option(EOL) RCURL optionSemi {}
 typeCaseClause:
-  | typeSwitchCase COLON statList
+  | typeSwitchCase COLON statList {}
+typeSwitchGuard:
+  | guardOption primExp DOT LPAR TYPE RPAR {}
+guardOption:
+  | ID COLEQ {}
+  | {}
 typeSwitchCase:
-  | CASE typeList
+  | CASE typeList {}
   | DEFAULT {}
 typeList:
   | typeG COMMA typeList {}
-  | typeG (*check back on this one, might allow trailing commas*)
+  | typeG {}(*check back on this one, might allow trailing commas*)
 forStat:
   | FOR forOption block{}
 forOption:
@@ -284,12 +354,16 @@ forOption:
   | forClause {}
   /*| rangeClause {} no range in golite*/
 forClause:
-  | option(simpleStat) SEMICOLON option(exp) SEMICOLON option(simpleStat)
+  | option(simpleStat) optionSemi  option(exp) optionSemi  option(simpleStat) {}
 breakStat:
   | BREAK option(ID){}
 continueStat:
-  | {}
+  | CONTINUE option(ID){}
 assign:
-  | {}
+  | expList assOp expList{}
+assOp:
+  | PLUSEQ {}
+  | MINEQ {}
+  | EQUAL {}
 
 ;
