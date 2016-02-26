@@ -8,7 +8,7 @@
 %token <string> RUNESTRING
 %token <string> TYPE
 %token AMPERSAND, AMPHAT, AMPHATEQ
-%token AND, OR,APPEND
+%token AND, OR, APPEND
 %token BREAK
 %token CASE, SWITCH
 %token CHAN
@@ -20,7 +20,7 @@
 %token DOT, DOTS
 %token EEQUAL, EQUAL
 %token ELSE, IF
-%token EOF, EOL
+%token EOF
 %token FALLTHROUGH
 %token FOR
 %token FUNC
@@ -51,6 +51,7 @@
 %token SLASH, SLASHEQ
 %token STAR, STAREQ
 %token STRUCT
+%token SWITCH
 %token TYPET
 %token VAR
 %token VERTEQ
@@ -72,120 +73,82 @@ one of the keywords break, continue, fallthrough, or return
 one of the operators and delimiters ++, --, ), ], or }*)
 (* Rules *)
 prog:
-  | packDec optionSemi option(importDec) optionSemi option(decList) optionSemi statList EOF { print_endline "finish"}
-optionSemi:
-  | EOL {}
-  | SEMICOLON {}
+  | option(packDec) list(importDec) list(topDec) list(stat) EOF { print_endline "finish"}
+
 packDec: (*only one package declaration allowed*)
-  | PACKAGE ID   {}
-  | {}
+  | PACKAGE ID SEMICOLON  {}
+
 importDec:
-  | IMPORT importSpec {}
-  | IMPORT LPAR option(importSpecList) RPAR {}
-importSpecList:
-  | importSpec optionSemi importSpecList {}
-  | importSpec optionSemi {}
-
-
+  | IMPORT importSpec SEMICOLON {}
+  | IMPORT LPAR separated_list(SEMICOLON, importSpec) RPAR SEMICOLON {}
 importSpec:
   | DOT stringLit {}
   | ID stringLit {}
   | stringLit{}
 
-decList:
-  | dec optionSemi decList {}
+topDec:
   | dec {}
-dec:
-  | varD {}
-  | typeDec {}
-  | funD {}
-varD:(*variable declaration*)
-  | VAR subVar {}(*insert semi-colon only at the end of the sequence*)
-  | VAR LPAR option(EOL) subVarList option(EOL) RPAR  {}
-subVarList:(*only for var declarations in parentheses*)
-  | subVar optionSemi subVarList {}
-  | {}
-subVar:(*likewise, only relevant for group declarations*)
-  | idList typeG {}
-  | idList EQUAL expList {}
-  | idList typeG EQUAL expList {}
-idList:(*only use for inline stuff*)
-  | ID COMMA option(EOL) idList {}
-  | ID {}
-expList:
-  | exp COMMA option(EOL) expList {}
-  | exp {}
-typeDec:
-  | TYPET ID TYPE optionSemi typeDec {}
-  | TYPET LPAR option(typeSpecList) RPAR
-  | TYPET ID structType  {}
-  /*| {}*/
-typeSpecList:
-  | ID TYPE optionSemi typeSpecList
-  | ID TYPE optionSemi{}
+  | funcDeclr {}
 
-(*funD:(*function declaration *)
-  | FUNC ID LPAR funArg RPAR option(typeG) optionSemi {}
-  | FUNC ID LPAR funArg RPAR option(typeG) LCURL option(EOL) funC returnStat option(EOL) RCURL optionSemi{}(*what we're returning fom the function*)
-funC:/*function content*/
-  | varD {}
-  | expList {}
-  | EOL{}
-funArg:
-  | idList typeG COMMA funArg {}
-  | {}*)
-funD:
-  | FUNC ID funcC {}
-  | FUNC ID signature {}
-funcC :
-  | signature block {}
-signature:
-  | parameters option(result) {}
-result:
-  | parameters {}
-  | TYPE {}
-parameters:
-  | LPAR option(paramList) RPAR {}
-paramOption:
-  | paramList option(COMMA) {}
-paramList:
-  | paramDec COMMA paramList {}
-  | paramDec {}
-paramDec:
-  | option(idList) option(DOTS) TYPE {}
-returnStat:(*what we're returning fom the funcC {}*)
-  | RETURN ID optionSemi{}
-  | RETURN exp optionSemi{}
-  | RETURN optionSemi{}
+dec:
+  | varD SEMICOLON {}
+  | typeDec SEMICOLON {}
+varD:(*variable declaration*)
+  | VAR subVar {}
+  | VAR LPAR list(subVar) RPAR  {}
+subVar:(*likewise, only relevant for group declarations*)
+  | separated_nonempty_list(COMMA, ID) typeG SEMICOLON {}
+  | separated_nonempty_list(COMMA, ID) option(typeG) EQUAL separated_nonempty_list(COMMA, exp) SEMICOLON {}
+typeDec:
+  | TYPET pair(ID, TYPE) SEMICOLON {}
+  | TYPET LPAR separated_list(SEMICOLON, pair(ID, TYPE)) RPAR
+  | TYPET pair(ID, structType)  {}
+
+funcDeclr:
+  | FUNC ID delimited(LPAR, separated_list(COMMA, pair(ID, TYPE)), RPAR) block SEMICOLON {}
+block:
+  | LCURL list(stat) RCURL SEMICOLON {}
+
 typeG: (*basic types*)
   | TYPE {}
   | LSQPAR RSQPAR {} (*slice*)
   | LSQPAR INT RSQPAR {} (*array*)
-statList:
-  | stat optionSemi statList {}
-  | stat optionSemi {}
+
 stat:
-  | dec {} (*; or lb*)
-  | print {}(*; or lb*)
-  | returnStat {}(*; or lb*)
-  | ifStat {}
-  | switchStat {}
-  | forStat {}
-  | breakStat {}
-  | continueStat {}
-simpleStat:
-  | exp{}
-  | assign{}
-  | decShort{}
-  | incDec{}
+  | dec SEMICOLON {} (*; or lb*)
+  | assign SEMICOLON {}
+  | print SEMICOLON {}(*; or lb*)
+  | returnStat SEMICOLON {}(*; or lb*)
+  | ifStat SEMICOLON {}
+  | switchStat SEMICOLON {}
+  | forStat SEMICOLON {}
+  | breakStat SEMICOLON {}
+  | continueStat SEMICOLON {}
+
+assign:
+  | separated_nonempty_list(COMMA, ID) EQUAL separated_nonempty_list(COMMA, exp)
+  | ID COLEQ exp
+  | ID PLUSEQ exp
+  | ID MINEQ exp
+  | ID STAREQ exp
+  | ID SLASHEQ exp
+  | ID PERE exp
+  | ID VERTEQ exp
+  | ID HATEQ exp
+  | ID LLTEQ exp
+  | ID GGTEQ exp
+  | ID AMPHATEQ exp
+
+returnStat:
+  | RETURN option(exp) {}
 incDec:
   | exp PPLUS {}
   | exp MMINUS {}
 print:
-  | PRINT LPAR option(EOL) expList RPAR optionSemi {}
-  | PRINTLN LPAR option(EOL) expList RPAR optionSemi {}
+  | PRINT LPAR separated_list(COMMA, exp) RPAR SEMICOLON {}
+  | PRINTLN LPAR separated_list(COMMA, exp) RPAR SEMICOLON {}
 decShort: (*can't do this in top level*)
-  | idList COLEQ option(EOL) expList optionSemi{}
+  | idList COLEQ separated_list(COMMA, exp) SEMICOLON{}
 exp:
   | unary optionSemi{}
   | exp binary exp optionSemi{}
@@ -267,7 +230,7 @@ keyOption:
 element:
   | exp {}
   | literalValue {}
-funcLit: FUNC funcC {}
+funcLit: FUNC funcContent {}
 methodExp:
   | receiverType DOT ID {}
 receiverType:
@@ -317,11 +280,14 @@ ifStat:
   | IF option(simpleStatSemi) exp block option(elseOption) {} (*no lb after exp*)
 simpleStatSemi:
   |simpleStat optionSemi {}
+simpleStat:
+  | exp{}
+  | assign{}
+  | decShort{}
+  | incDec{}
 elseOption:
   | ELSE ifStat {}
   | ELSE block  {}
-block:
-  | LCURL option(EOL) option(statList) option(EOL) RCURL optionSemi{}
 switchStat:
   | expSwitchStat {}
   | typeSwitchStat {}

@@ -1,6 +1,7 @@
 {
 
   (* Header *)
+
   open Core.Std
   open Lexing
   open Parser
@@ -14,8 +15,27 @@
                  pos_lnum = pos.pos_lnum + 1
       }
 
+  let cache =
+    let l = ref [] in
+    fun lexbuf ->
+      match !l with
+      | x::xs -> l := xs; x
+      | [] -> match Lexer.tokens lexbuf with
+              | [] -> failwith "oops"
+              | x::xs -> l := xs; x
 
   let syntaxError msg = raise (SyntaxError (msg ^ " on line " ^ (string_of_int next_line)))
+
+  (* Flag for semicolon insertion *)
+  let insSemi = ref false
+
+  let semiFlagUp () =
+    insSemi := true;
+    ()
+
+  let semiFlagDown () =
+    insSemi := false;
+    ()
 
   (* End Header *)
 }
@@ -32,9 +52,6 @@ let comment = shortComment | longComment
 let space = [' ' '\t']+
 let linebreak = ['\r' '\n']
 let semicolon = ';'
-
-let linebreakRec = (linebreak | comment)* linebreak (linebreak | comment)*
-let semicolonRec = linebreakRec* semicolon linebreakRec*
 
 (* Building blocks for literals *)
 let digit = ['0'-'9']
@@ -74,93 +91,93 @@ let type = "int" | "float64" | "bool" | "rune" | "string"
 rule read =
   parse
   | space           { read lexbuf }
-  | semicolonRec    { SEMICOLON }
-  | linebreakRec    { EOL }
+  | semicolon       { semiFlagDown();  SEMICOLON }
+  | linebreak       { semiFlagDown();  if !insSemi then SEMICOLON }
   | comment         { read lexbuf }
-  | int             { INT Lexing.lexeme lexbuf }
-  | octal           { OCTAL Lexing.lexeme lexbuf }
-  | hexa            { HEXA Lexing.lexeme lexbuf }
-  | float           { FLOAT Lexing.lexeme lexbuf }
-  | interpretString { STRING Lexing.lexeme lexbuf }
-  | rawString       { RAWSTRING Lexing.lexeme lexbug }
-  | runeString      { RUNESTRING Lexing.lexeme lexbug }
-  | type            { TYPE Lexing.lexeme lexbuf }
-  | '+'             { PLUS }
-  | '-'             { MINUS }
-  | '*'             { STAR }
-  | '/'             { SLASH }
-  | '%'             { PERCENT }
-  | '&'             { AMPERSAND }
-  | '|'             { VERTICAL }
-  | '^'             { HAT }
-  | "<<"            { LLT }
-  | ">>"            { GGT }
-  | "&^"            { AMPHAT }
-  | "+="            { PLUSEQ }
-  | "-="            { MINEQ }
-  | "*="            { STAREQ }
-  | "/="            { SLASHEQ }
-  | "%="            { PEREQ}
-  | "|="            { VERTEQ }
-  | "^="            { HATEQ }
-  | "<<="           { LLTEQ }
-  | ">>="           { GGTEQ }
-  | "&^="           { AMPHATEQ }
-  | "&&"            { AND }
-  | "|| "            { OR }
-  | "<-"            { LTMIN }
-  | "++"            { PPLUS }
-  | "--"            { MMINUS }
-  | "=="            { EEQUAL }
-  | '<'             { LT }
-  | '>'             { GT }
-  | '='             { EQUAL }
-  | '!'             { NOT }
-  | "!="            { NOTEQ}
-  | "<="            { LTEQ }
-  | ">="            { GTEQ }
-  | ":="            { COLEQ }
-  | "..."           { DOTS }
-  | '('             { LPAR }
-  | ')'             { RPAR }
-  | '['             { LSQPAR}
-  | ']'             { RSQPAR }
-  | '{'             { LCURL }
-  | '}'             { RCURL}
-  | ','             { COMMA }
-  | '.'             { DOT }
-  | ':'             { COLON }
-  | "append"         { APPEND }
-  | "eof"            { EOF }
-  | "break"          { BREAK }
-  | "case"           { CASE }
-  | "chan"           { CHAN }
-  | "const"          { CONST }
-  | "continue"       { CONTINUE }
-  | "default"        { DEFAULT }
-  | "defer"          { DEFER }
-  | "else"           { ELSE }
-  | "fallthrough"    { FALLTHROUGH }
-  | "for"            { FOR }
-  | "func"           { FUNC }
-  | "go"             { GO }
-  | "goto"           { GOTO }
-  | "if"             { IF }
-  | "import"         { IMPORT }
-  | "interface"      { INTERFACE }
-  | "map"            { MAP }
-  | "package"        { PACKAGE }
-  | "print"          { PRINT }
-  | "println"        { PRINTLN }
-  | "range"          { RANGE }
-  | "return"         { RETURN }
-  | "select"         { SELECT }
-  | "struct"         { STRUCT }
-  | "switch"         { SWITCH }
-  | "type"           { TYPE }
-  | "var"            { VAR }
-  | id               { ID Lexing.lexeme lexbug }
-  | eof              { EOF }
+  | int             { semiFlagUp();  INT (Lexing.lexeme lexbuf) }
+  | octal           { semiFlagUp();  OCTAL (Lexing.lexeme lexbuf) }
+  | hexa            { semiFlagUp();  HEXA (Lexing.lexeme lexbuf) }
+  | float           { semiFlagUp();  FLOAT (Lexing.lexeme lexbuf) }
+  | interpretString { semiFlagUp();  STRING (Lexing.lexeme lexbuf) }
+  | rawString       { semiFlagUp();  RAWSTRING (Lexing.lexeme lexbuf) }
+  | runeString      { semiFlagUp();  RUNESTRING (Lexing.lexeme lexbuf) }
+  | type            { semiFlagDown();  TYPE (Lexing.lexeme lexbuf) }
+  | '+'             { semiFlagDown();  PLUS }
+  | '-'             { semiFlagDown();  MINUS }
+  | '*'             { semiFlagDown();  STAR }
+  | '/'             { semiFlagDown();  SLASH }
+  | '%'             { semiFlagDown();  PERCENT }
+  | '&'             { semiFlagDown();  AMPERSAND }
+  | '|'             { semiFlagDown();  VERTICAL }
+  | '^'             { semiFlagDown();  HAT }
+  | "<<"            { semiFlagDown();  LLT }
+  | ">>"            { semiFlagDown();  GGT }
+  | "&^"            { semiFlagDown();  AMPHAT }
+  | "+="            { semiFlagDown();  PLUSEQ }
+  | "-="            { semiFlagDown();  MINEQ }
+  | "*="            { semiFlagDown();  STAREQ }
+  | "/="            { semiFlagDown();  SLASHEQ }
+  | "%="            { semiFlagDown();  PEREQ}
+  | "|="            { semiFlagDown();  VERTEQ }
+  | "^="            { semiFlagDown();  HATEQ }
+  | "<<="           { semiFlagDown();  LLTEQ }
+  | ">>="           { semiFlagDown();  GGTEQ }
+  | ":="            { semiFlagDown();  COLEQ }
+  | "&^="           { semiFlagDown();  AMPHATEQ }
+  | "&&"            { semiFlagDown();  AND }
+  | "|| "            { semiFlagDown();  OR }
+  | "<-"            { semiFlagDown();  LTMIN }
+  | "++"            { semiFlagUp();  PPLUS }
+  | "--"            { semiFlagUp();  MMINUS }
+  | "=="            { semiFlagDown();  EEQUAL }
+  | '<'             { semiFlagDown();  LT }
+  | '>'             { semiFlagDown();  GT }
+  | '='             { semiFlagDown();  EQUAL }
+  | '!'             { semiFlagDown();  NOT }
+  | "!="            { semiFlagDown();  NOTEQ}
+  | "<="            { semiFlagDown();  LTEQ }
+  | ">="            { semiFlagDown();  GTEQ }
+  | "..."           { semiFlagDown();  DOTS }
+  | '('             { semiFlagDown();  LPAR }
+  | ')'             { semiFlagUp();  RPAR }
+  | '['             { semiFlagDown();  LSQPAR}
+  | ']'             { semiFlagUp();  RSQPAR }
+  | '{'             { semiFlagDown();  LCURL }
+  | '}'             { semiFlagUp();  RCURL}
+  | ','             { semiFlagDown();  COMMA }
+  | '.'             { semiFlagDown();  DOT }
+  | ':'             { semiFlagDown();  COLON }
+  | "append"         { semiFlagDown();  APPEND }
+  | "eof"            { semiFlagDown();  EOF }
+  | "break"          { semiFlagUp();  BREAK }
+  | "case"           { semiFlagDown();  CASE }
+  | "chan"           { semiFlagDown();  CHAN }
+  | "const"          { semiFlagDown();  CONST }
+  | "continue"       { semiFlagUp();  CONTINUE }
+  | "default"        { semiFlagDown();  DEFAULT }
+  | "defer"          { semiFlagDown();  DEFER }
+  | "else"           { semiFlagDown();  ELSE }
+  | "fallthrough"    { semiFlagUp();  FALLTHROUGH }
+  | "for"            { semiFlagDown();  FOR }
+  | "func"           { semiFlagDown();  FUNC }
+  | "go"             { semiFlagDown();  GO }
+  | "goto"           { semiFlagDown();  GOTO }
+  | "if"             { semiFlagDown();  IF }
+  | "import"         { semiFlagDown();  IMPORT }
+  | "interface"      { semiFlagDown();  INTERFACE }
+  | "map"            { semiFlagDown();  MAP }
+  | "package"        { semiFlagDown();  PACKAGE }
+  | "print"          { semiFlagDown();  PRINT }
+  | "println"        { semiFlagDown();  PRINTLN }
+  | "range"          { semiFlagDown();  RANGE }
+  | "return"         { semiFlagUp();  RETURN }
+  | "select"         { semiFlagDown();  SELECT }
+  | "struct"         { semiFlagDown();  STRUCT }
+  | "switch"         { semiFlagDown();  SWITCH }
+  | "type"           { semiFlagDown();  TYPET }
+  | "var"            { semiFlagDown();  VAR }
+  | id               { semiFlagUp();  ID (Lexing.lexeme lexbug) }
+  | eof              { semiFlagDown();  EOF }
 
 {
   (* Trailer *)
