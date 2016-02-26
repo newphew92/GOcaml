@@ -332,5 +332,4 @@ assOp:
   | PLUSEQ {}
   | MINEQ {}
   | EQUAL {}
-
 ;
