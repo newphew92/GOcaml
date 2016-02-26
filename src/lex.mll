@@ -15,15 +15,6 @@
                  pos_lnum = pos.pos_lnum + 1
       }
 
-  let cache =
-    let l = ref [] in
-    fun lexbuf ->
-      match !l with
-      | x::xs -> l := xs; x
-      | [] -> match Lexer.tokens lexbuf with
-              | [] -> failwith "oops"
-              | x::xs -> l := xs; x
-
   let syntaxError msg = raise (SyntaxError (msg ^ " on line " ^ (string_of_int next_line)))
 
   (* Flag for semicolon insertion *)
