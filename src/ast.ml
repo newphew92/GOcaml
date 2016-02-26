@@ -1,17 +1,10 @@
 type ast ={
-  pack: packDec;
-  import: importDec list;
+  pack: string;
+  imports: string list;
   top: topDec list;
   stat: statement list;
 }
-and
-packDec={
-  id : string;
-}
-and
-importDec ={
-  id: string;
-}
+
 and statement =
   | Break of string option
   | Continue of string option
@@ -30,7 +23,7 @@ and topDec =
   | Funs of funcDec
 
 and dec =
-  | Vars of varDec
+  | Vars of varDec (*VAR subvar*)
   | Type of typeDec
 and varDec = string list * string option * exp list
 and typeDec =
@@ -71,9 +64,7 @@ and exp =
 
 and block = statement list
 
-let getExp (e)= match e with
-| patt -> expr
-| _ -> expr2
+
 
 let castExp (t,e) = match e with
 | _ -> (t,e)

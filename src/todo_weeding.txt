@@ -1,0 +1,6 @@
+traverse AST to check:
+
+1) CONTINUE, BREAK are in loops
+2) RETURN are in Functions (might be unnecessary)
+3) No FUNC declaration token is nested in a function
+4) Forbid unused expressions?

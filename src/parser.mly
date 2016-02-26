@@ -46,7 +46,6 @@
 %token PRINT, PRINTLN
 %token RANGE
 %token RETURN
-%token RSQPA
 %token SELECT
 %token SLASH, SLASHEQ
 %token STAR, STAREQ
@@ -72,16 +71,10 @@
 
 %start prog
 %%
-(*The formal grammar uses semicolons ; as terminators in a number of productions. Go programs may omit most of these semicolons using the following two rules:
 
-When the input is broken into tokens, a semicolon is automatically inserted into the token stream immediately after a line's final token if that token is
-an identifier
-an integer, floating-point, imaginary, rune, or string literal
-one of the keywords break, continue, fallthrough, or return
-one of the operators and delimiters ++, --, ), ], or }*)
 (* Rules *)
 prog:
-  | option(packDec) list(importDec) list(topDec) list(stat) EOF { print_endline "finish"}
+  | option(packDec) list(importDec) list(terminated(dec, SEMICOLON)) EOF { print_endline "finish"}
 
 packDec: (*only one package declaration allowed*)
   | PACKAGE ID SEMICOLON  {}
@@ -94,58 +87,54 @@ importSpec:
   | ID stringVal {}
   | stringVal{}
 
-topDec:
-  | dec {}
-  | funcDeclr {}
-
+(* Conflicts in this thing *)
 dec:
-  | varD SEMICOLON {}
-  | typeDec SEMICOLON {}
-varD:(*variable declaration*)
-  | VAR subVar {}
-  | VAR LPAR list(subVar) RPAR  {}
-subVar:(*likewise, only relevant for group declarations*)
-  | separated_nonempty_list(COMMA, ID) typeG SEMICOLON{}
-  | separated_nonempty_list(COMMA, ID) option(typeG) EQUAL separated_nonempty_list(COMMA, exp) SEMICOLON {}
+
+  | VAR subDec {}
+  | VAR LPAR separated_list(SEMICOLON, subDec) RPAR {}
+  | funcDeclr {} (* IN WEEDING CHECK THAT THIS IS NOT INSIDE A FUNC *)
+  | typeDec {}
+subDec:(*likewise, only relevant for group declarations*)
+  | separated_nonempty_list(COMMA, ID) typeG {}
+  | separated_nonempty_list(COMMA, ID) option(typeG) EQUAL separated_nonempty_list(COMMA, exp) {}
 typeDec:
-  | TYPET pair(ID, TYPE) SEMICOLON {}
-  | TYPET LPAR separated_list(SEMICOLON, pair(ID, TYPE)) RPAR
-  | TYPET pair(ID, structType)  {}
-
+  | TYPET pair(ID, TYPE) {}
+  | TYPET LPAR separated_list(SEMICOLON, pair(ID, TYPE)) RPAR {}
+  | TYPET pair(ID, structType) {}
 structType:
-  | STRUCT LCURL list(fieldDec) RCURL{}
-fieldDec:
-  | separated_list(COMMA, ID) fieldType SEMICOLON {}
-  | option(STAR) ID SEMICOLON {}
+  | STRUCT delimited(LCURL, list(fieldDec), RCURL) {}
 
-fieldType:
-  | TYPE {}
-  | option(STAR) LSQPAR option(INT) RSQPAR TYPE {}
+(* Some conflicts due to the STAR *)
+fieldDec:
+  | separated_list(COMMA, ID) TYPE SEMICOLON {}
+  | separated_list(COMMA, ID) LSQPAR exp RSQPAR TYPE SEMICOLON {}
+  | ID SEMICOLON {}
+  | STAR ID SEMICOLON {}
 
 funcDeclr:
-  | FUNC ID delimited(LPAR, separated_list(COMMA, pair(ID, option(TYPE))), RPAR) block SEMICOLON {}
+  | FUNC ID delimited(LPAR, separated_list(COMMA, pair(ID, option(TYPE))), RPAR) block {}
 block:
   | LCURL list(stat) RCURL {}
 
 typeG: (*basic types*)
   | TYPE {}
   | LSQPAR RSQPAR {} (*slice*)
-  | LSQPAR INT RSQPAR {} (*array*)
+  | LSQPAR exp RSQPAR {} (*array*)
 
 stat:
+  | simpleStat SEMICOLON {} (* Assign and expr *)
   | dec SEMICOLON {}
-  | assign SEMICOLON {}
   | print SEMICOLON {}
   | ifStat SEMICOLON {}
   | switchStat SEMICOLON {}
-  | loopStat SEMICOLON {}
+  | forStat SEMICOLON {}
   | BREAK SEMICOLON {}
   | CONTINUE SEMICOLON {}
   | RETURN option(exp) SEMICOLON {}
 
 assign:
   | separated_nonempty_list(COMMA, assignee) EQUAL separated_nonempty_list(COMMA, exp) {}
-  | assignee COLEQ exp {}
+  | separated_list(COMMA, assignee) COLEQ separated_list(COMMA, exp) {}
   | assignee PLUSEQ exp {}
   | assignee MINEQ exp {}
   | assignee STAREQ exp {}
@@ -158,10 +147,9 @@ assign:
   | assignee AMPHATEQ exp {}
   | incDec {}
 
-
 assignee:
-  | ID LSQPAR exp RSQPAR {}
-  | ID
+  | ID {}
+  | primary LSQPAR exp RSQPAR {} (* TYPECHECKER WILL NEED TO GET SURE THIS IS AN ID *)
 
 incDec:
   | assignee PPLUS {} (* equivalent to ID += ID *)
@@ -171,7 +159,6 @@ print:
   | PRINT delimited(LPAR, separated_list(COMMA, exp), RPAR) SEMICOLON {}
   | PRINTLN delimited(LPAR, separated_list(COMMA, exp), RPAR) SEMICOLON {}
 
-(* SECOND ATTEMPT AT EXP *)
 exp:
   | exp logicOp factor {}
   | exp addOp factor {}
@@ -182,7 +169,7 @@ factor:
   | unary {["",$1]}
 
 unary:
-  | unaryOp unary {}
+  | unaryOp primary {}
   | primary {}
 
 primary:
@@ -208,11 +195,9 @@ stringVal :
   | RAWSTRING {ExpValRawString($1)}
   | STRING {ExpValString($1)}
 
-(* HOPEFULLY IT WORKED *)
-
-%inline logicOp:
-  | logic {$1}
-  | relOp {$1}
+logicOp:
+  | logic {}
+  | relOp {}
 logic:
   | OR  {$1}
   | AND {$1}
@@ -230,12 +215,13 @@ addOp:
   | VERTICAL {$1}
   | HAT {$1}
 multOp:
-  | STAR {$1}
-  | SLASH {$1}
-  | AMPERSAND {$1}
-  | AMPHAT {$1}
-  | LLT {$1} (*<<*)
-  | GGT {$1} (*>>*)
+  | STAR {}
+  | SLASH {}
+  | AMPERSAND {}
+  | AMPHAT {}
+  | PERCENT {}
+  | LLT {} (*<<*)
+  | GGT {} (*>>*)
 unaryOp:
   | PLUS {$1}
   | MINUS {$1}
@@ -245,29 +231,29 @@ unaryOp:
   | AMPERSAND {$1}
   | LTMIN {$1}
 
-ifStat:
-  | IF option(simpleStat) exp block option(elseStat) {}
-
-simpleStat:
-| exp SEMICOLON {$1}
-| assign SEMICOLON {}
-| separated_list(COMMA, ID) COLEQ separated_list(COMMA, exp) SEMICOLON {}
-| incDec SEMICOLON {}
-
-elseStat:
-  | ELSE ifStat {}
-  | ELSE block SEMICOLON {}
-
 switchStat:
-  | SWITCH option(simpleStat) option(exp) LCURL list(switchClause) RCURL {}
+  | SWITCH option(exp) LCURL list(switchClause) RCURL {}
+  | SWITCH simpleStat option(exp) LCURL list(switchClause) RCURL {}
 switchClause:
   | switchCase COLON list(stat) {}
 switchCase:
   | CASE separated_list(COMMA, exp) {}
   | DEFAULT {}
 
-loopStat:
+(* Around 10 conflicts in IF *)
+ifStat:
+  | IF simpleStat exp block option(elseStat) {}
+  | IF exp block option(elseStat) {}
+elseStat:
+  | ELSE ifStat {}
+  | ELSE block SEMICOLON {}
+
+simpleStat:
+  | exp SEMICOLON {}
+  | assign SEMICOLON {}
+
+forStat:
   | FOR block SEMICOLON {}
   | FOR exp block SEMICOLON {}
-  | FOR ID COLEQ exp SEMICOLON exp SEMICOLON incDec block SEMICOLON {}
+  | FOR assign SEMICOLON exp SEMICOLON incDec block SEMICOLON {}
 ;
