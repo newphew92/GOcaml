@@ -176,7 +176,7 @@ primary:
   | LPAR exp RPAR {$2}
   | ID {$1}
   | constVal {$1}
-  | TYPE LPAR exp RPAR {castExp($1,$2)} (*typecast*)
+  | TYPE LPAR exp RPAR {} (*typecast*)
   | FUNC delimited(LPAR, separated_list(COMMA, pair(ID, option(TYPE))), RPAR) block (* Function literal *)
   | primary LSQPAR exp RSQPAR {} (* index element *)
   | primary LSQPAR option(exp) COLON option(exp) RSQPAR {} (* slices *)

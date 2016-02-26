@@ -18,7 +18,6 @@ type token =
   | SELECT
   | RUNESTRING of (string)
   | RSQPAR
-  | RSQPA
   | RPAR
   | RETURN
   | RCURL

@@ -4,25 +4,25 @@ type ast ={
   top: topDec list;
   stat: statement list;
 }
-
+and import =
+  | GlobalImp  of
+  | RenameImp of
+  | LiteralImp of
 and statement =
-  | Break of string option
-  | Continue of string option
-  | Declare of dec
-  | Loop of loopStat
-  | If of ifStat
-  | Print of exp option
-  | Println of exp option
-  | Return of string option
-  | Switch of switchStat
-  | Exp of exp (*simpleStat*)
-  | Assign of assStat
-
-and topDec =
-  | Decs of dec
-  | Funs of funcDec
+  | BreakStat of string option
+  | ContinueStat of string option
+  | DeclareStat of dec
+  | LoopStat of loopStat
+  | IfStat of ifStat
+  | PrintStat of exp option
+  | PrintlnStat of exp option
+  | ReturnStat of string option
+  | SwitchStat of switchStat
+  | ExpStat of exp (*simpleStat*)
+  | AssignStat of assStat
 
 and dec =
+  | Funs of funcDec
   | Vars of varDec (*VAR subvar*)
   | Type of typeDec
 and varDec = string list * string option * exp list
