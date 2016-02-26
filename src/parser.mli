@@ -29,7 +29,7 @@ type token =
   | PPLUS
   | PLUSEQ
   | PLUS
-  | PERE
+  | PEREQ
   | PERCENT
   | PACKAGE
   | OR
@@ -67,7 +67,6 @@ type token =
   | FLOAT of (string)
   | FALLTHROUGH
   | EQUAL
-  | EOL
   | EOF
   | ELSE
   | EEQUAL
