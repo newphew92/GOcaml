@@ -41,7 +41,7 @@
 %token NOT, NOTEQ
 %token PACKAGE
 %token PERCENT
-%token PERE
+%token PEREQ
 %token PLUS, PLUSEQ, PPLUS
 %token PRINT, PRINTLN
 %token RANGE
@@ -51,7 +51,6 @@
 %token SLASH, SLASHEQ
 %token STAR, STAREQ
 %token STRUCT
-%token SWITCH
 %token TYPET
 %token VAR
 %token VERTEQ
@@ -82,9 +81,9 @@ importDec:
   | IMPORT importSpec SEMICOLON {}
   | IMPORT LPAR separated_list(SEMICOLON, importSpec) RPAR SEMICOLON {}
 importSpec:
-  | DOT stringLit {}
-  | ID stringLit {}
-  | stringLit{}
+  | DOT stringVal {}
+  | ID stringVal {}
+  | stringVal{}
 
 topDec:
   | dec {}
@@ -104,10 +103,20 @@ typeDec:
   | TYPET LPAR separated_list(SEMICOLON, pair(ID, TYPE)) RPAR
   | TYPET pair(ID, structType)  {}
 
+structType:
+  | STRUCT LCURL list(fieldDec) RCURL{}
+fieldDec:
+  | separated_list(COMMA, ID) fieldType SEMICOLON {}
+  | option(STAR) ID SEMICOLON {}
+
+fieldType:
+  | TYPE {}
+  | option(STAR) LSQPAR option(INT) RSQPAR TYPE {}
+
 funcDeclr:
-  | FUNC ID delimited(LPAR, separated_list(COMMA, pair(ID, TYPE)), RPAR) block SEMICOLON {}
+  | FUNC ID delimited(LPAR, separated_list(COMMA, pair(ID, option(TYPE))), RPAR) block SEMICOLON {}
 block:
-  | LCURL list(stat) RCURL SEMICOLON {}
+  | LCURL list(stat) RCURL {}
 
 typeG: (*basic types*)
   | TYPE {}
@@ -115,140 +124,89 @@ typeG: (*basic types*)
   | LSQPAR INT RSQPAR {} (*array*)
 
 stat:
-  | dec SEMICOLON {} (*; or lb*)
+  | dec SEMICOLON {}
   | assign SEMICOLON {}
-  | print SEMICOLON {}(*; or lb*)
-  | returnStat SEMICOLON {}(*; or lb*)
+  | print SEMICOLON {}
   | ifStat SEMICOLON {}
   | switchStat SEMICOLON {}
-  | forStat SEMICOLON {}
-  | breakStat SEMICOLON {}
-  | continueStat SEMICOLON {}
+  | loopStat SEMICOLON {}
+  | BREAK SEMICOLON {}
+  | CONTINUE SEMICOLON {}
+  | RETURN option(exp) SEMICOLON {}
 
 assign:
-  | separated_nonempty_list(COMMA, ID) EQUAL separated_nonempty_list(COMMA, exp)
-  | ID COLEQ exp
-  | ID PLUSEQ exp
-  | ID MINEQ exp
-  | ID STAREQ exp
-  | ID SLASHEQ exp
-  | ID PERE exp
-  | ID VERTEQ exp
-  | ID HATEQ exp
-  | ID LLTEQ exp
-  | ID GGTEQ exp
-  | ID AMPHATEQ exp
+  | separated_nonempty_list(COMMA, assignee) EQUAL separated_nonempty_list(COMMA, exp) {}
+  | assignee COLEQ exp {}
+  | assignee PLUSEQ exp {}
+  | assignee MINEQ exp {}
+  | assignee STAREQ exp {}
+  | assignee SLASHEQ exp {}
+  | assignee PEREQ exp {}
+  | assignee VERTEQ exp {}
+  | assignee HATEQ exp {}
+  | assignee LLTEQ exp {}
+  | assignee GGTEQ exp {}
+  | assignee AMPHATEQ exp {}
+  | incDec {}
 
-returnStat:
-  | RETURN option(exp) {}
+
+assignee:
+  | ID {}
+  | ID LSQPAR exp RSQPAR {}
+
 incDec:
-  | exp PPLUS {}
-  | exp MMINUS {}
+  | assignee PPLUS {} (* equivalent to ID += ID *)
+  | assignee MMINUS {}
+
 print:
-  | PRINT LPAR separated_list(COMMA, exp) RPAR SEMICOLON {}
-  | PRINTLN LPAR separated_list(COMMA, exp) RPAR SEMICOLON {}
-decShort: (*can't do this in top level*)
-  | idList COLEQ separated_list(COMMA, exp) SEMICOLON{}
+  | PRINT delimited(LPAR, separated_list(COMMA, exp), RPAR) SEMICOLON {}
+  | PRINTLN delimited(LPAR, separated_list(COMMA, exp), RPAR) SEMICOLON {}
+
+(* SECOND ATTEMPT AT EXP *)
 exp:
-  | unary optionSemi{}
-  | exp binary exp optionSemi{}
+  | exp logicOp factor {}
+  | exp addOp factor {}
+  | factor {}
+
+factor:
+  | factor multOp unary {}
+  | unary {}
+
 unary:
-  | primExp {}
   | unaryOp unary {}
-primExp:
-  | operand {}
-  | conversion (*typecase*) {}
-  | primExp selector {}
-  | primExp index {}
-  | primExp slice {}
-  | primExp arg {}
-conversion:
-  | TYPE LPAR exp option(COMMA) RPAR {}
-selector:
-  | DOT ID {}
-index:
-  | LSQPAR exp RSQPAR {}
-slice:
-  | LSQPAR option(exp) COLON option(exp) {}
-  | option(exp) COLON exp COLON exp RSQPAR {}
-arg:
-  | LPAR option(argOption) RPAR {}
-argOption:
-  | expList option(DOTS) option(COMMA) {}
-  | TYPE option(DOTS) option(COMMA) {}
-  | TYPE COMMA expList option(DOTS) option(COMMA) {}
-operand: (*TODO*)
-  | literal {}
-  | methodExp {}
-  | operandName {}
+  | primary {}
+
+primary:
   | LPAR exp RPAR {}
-literal:
-  | basicLit {}
-  | compositeLit {}
-  | funcLit {}
-basicLit:
+  | ID {}
+  | constVal {}
+  | TYPE LPAR exp RPAR {} (*typecast*)
+  | FUNC delimited(LPAR, separated_list(COMMA, pair(ID, option(TYPE))), RPAR) block (* Function literal *)
+  | primary LSQPAR exp RSQPAR {} (* index element *)
+  | primary LSQPAR option(exp) COLON option(exp) RSQPAR {} (* slices *)
+  | ID DOT ID {} (* package.field *)
+  | primary LPAR separated_list(COMMA, exp) RPAR {} (* function call *)
+
+constVal :
   | INT {}
   | FLOAT {}
   | RUNESTRING {}
   | OCTAL {}
   | HEXA {}
-  | stringLit {}
-stringLit:
+  | stringVal {}
+
+stringVal :
   | RAWSTRING {}
   | STRING {}
-compositeLit:
-  | literalType literalValue {}
-literalType:
-  | structType {} (*TODO NOW*)
-  | LSQPAR exp RSQPAR TYPE {} (*array type*)
-  | LSQPAR DOTS RSQPAR TYPE {}
-  | LSQPAR RSQPAR TYPE {}(*slice type*)
-  /*| mapType {}*/
-  | typeName {}
-structType:
-  | STRUCT LCURL option(EOL) option(fieldDecList) option(EOL)  RCURL optionSemi{}
-fieldDecList:
-  | fieldDecListOption optionSemi fieldDecList option(stringLit) {}
-  | fieldDecListOption optionSemi option(stringLit) {}
-fieldDecListOption:
-  | idList TYPE  {}
-  | option(STAR) TYPE {}
-literalValue:
-  | LCURL option(EOL) optionLitVal RCURL {}
-optionLitVal:
-  | elementList option(COMMA) {}
-elementList:
-  | keyedElement COMMA elementList {}
-  | keyedElement {}
-keyedElement:
-  | keyOption element {}
-keyOption:
-  | ID COLON {}
-  | exp COLON {}
-  | literalValue COLON {}
-  | {}
-element:
-  | exp {}
-  | literalValue {}
-funcLit: FUNC funcContent {}
-methodExp:
-  | receiverType DOT ID {}
-receiverType:
-  | typeName {}
-  | LPAR STAR typeName RPAR {}
-  | LPAR receiverType RPAR {}
-typeName:
-  | ID {}
-  | ID DOT ID (*package.id*) {}
-operandName:
-  | ID {}
-  | ID DOT ID (*package.id*) {}
-binary:
+
+(* HOPEFULLY IT WORKED *)
+
+logicOp:
+  | logic {}
+  | relOp {}
+logic:
   | OR  {}
   | AND {}
-  | relOp {}
-  | addOp {}
-  | mulOp {}
 relOp:
   | EEQUAL {}
   | NOTEQ {}
@@ -256,12 +214,13 @@ relOp:
   | LTEQ {}
   | GT {}
   | GTEQ {}
+
 addOp:
   | PLUS {}
   | MINUS {}
   | VERTICAL {}
   | HAT {}
-mulOp:
+multOp:
   | STAR {}
   | SLASH {}
   | AMPERSAND {}
@@ -276,61 +235,30 @@ unaryOp:
   | STAR {}
   | AMPERSAND {}
   | LTMIN {}
-ifStat:
-  | IF option(simpleStatSemi) exp block option(elseOption) {} (*no lb after exp*)
-simpleStatSemi:
-  |simpleStat optionSemi {}
-simpleStat:
-  | exp{}
-  | assign{}
-  | decShort{}
-  | incDec{}
-elseOption:
-  | ELSE ifStat {}
-  | ELSE block  {}
-switchStat:
-  | expSwitchStat {}
-  | typeSwitchStat {}
-expSwitchStat:
-  | SWITCH option(simpleStatSemi) option(exp) LCURL option(EOL) expCaseClause option(EOL) RCURL optionSemi {}
-expCaseClause:
-  | expSwitchCase COLON statList expCaseClause{}
-  | {}
-expSwitchCase:
-  | CASE expList {}
-  | DEFAULT {}
-typeSwitchStat:
-  | SWITCH option(simpleStatSemi) typeSwitchGuard LCURL option(EOL) typeCaseClause option(EOL) RCURL optionSemi {}
-typeCaseClause:
-  | typeSwitchCase COLON statList {}
-typeSwitchGuard:
-  | guardOption primExp DOT LPAR TYPE RPAR {}
-guardOption:
-  | ID COLEQ {}
-  | {}
-typeSwitchCase:
-  | CASE typeList {}
-  | DEFAULT {}
-typeList:
-  | typeG COMMA typeList {}
-  | typeG {}(*check back on this one, might allow trailing commas*)
-forStat:
-  | FOR forOption block{}
-forOption:
-  | exp {}
-  | forClause {}
-  /*| rangeClause {} no range in golite*/
-forClause:
-  | option(simpleStat) optionSemi  option(exp) optionSemi  option(simpleStat) {}
-breakStat:
-  | BREAK option(ID){}
-continueStat:
-  | CONTINUE option(ID){}
-assign:
-  | expList assOp expList{}
-assOp:
-  | PLUSEQ {}
-  | MINEQ {}
-  | EQUAL {}
 
+ifStat:
+  | IF option(simpleStat) exp block option(elseStat) {}
+
+simpleStat:
+| exp SEMICOLON {}
+| assign SEMICOLON {}
+| separated_list(COMMA, ID) COLEQ separated_list(COMMA, exp) SEMICOLON {}
+| incDec SEMICOLON {}
+
+elseStat:
+  | ELSE ifStat {}
+  | ELSE block SEMICOLON {}
+
+switchStat:
+  | SWITCH option(simpleStat) option(exp) LCURL list(switchClause) RCURL {}
+switchClause:
+  | switchCase COLON list(stat) {}
+switchCase:
+  | CASE separated_list(COMMA, exp) {}
+  | DEFAULT {}
+
+loopStat:
+  | FOR block SEMICOLON {}
+  | FOR exp block SEMICOLON {}
+  | FOR ID COLEQ exp SEMICOLON exp SEMICOLON incDec block SEMICOLON {}
 ;
