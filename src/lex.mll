@@ -122,6 +122,7 @@ rule read =
   | "^="            { semiFlagDown();  HATEQ }
   | "<<="           { semiFlagDown();  LLTEQ }
   | ">>="           { semiFlagDown();  GGTEQ }
+  | ":="            { semiFlagDown();  COLEQ }
   | "&^="           { semiFlagDown();  AMPHATEQ }
   | "&&"            { semiFlagDown();  AND }
   | "|| "            { semiFlagDown();  OR }
@@ -136,7 +137,6 @@ rule read =
   | "!="            { semiFlagDown();  NOTEQ}
   | "<="            { semiFlagDown();  LTEQ }
   | ">="            { semiFlagDown();  GTEQ }
-  | ":="            { semiFlagDown();  COLEQ }
   | "..."           { semiFlagDown();  DOTS }
   | '('             { semiFlagDown();  LPAR }
   | ')'             { semiFlagUp();  RPAR }
