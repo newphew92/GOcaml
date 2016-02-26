@@ -56,7 +56,16 @@
 %token VERTICAL
 
 %token <string> ID
-
+%left OR
+%left AND
+%nonassoc NOT
+%nonassoc LT LTEQ GT GTEQ EQ NOTEQ
+%left MINUS PLUS
+%left STAR SLASH
+%nonassoc LBRACKET
+%nonassoc THEN
+%nonassoc ELSE
+%nonassoc BEFORE
 (* Nodes type *)
 %type <int> prog
 
@@ -80,6 +89,7 @@ importSpec:
 
 (* Conflicts in this thing *)
 dec:
+
   | VAR subDec {}
   | VAR LPAR separated_list(SEMICOLON, subDec) RPAR {}
   | funcDeclr {} (* IN WEEDING CHECK THAT THIS IS NOT INSIDE A FUNC *)
@@ -155,55 +165,55 @@ exp:
   | factor {}
 
 factor:
-  | factor multOp unary {}
-  | unary {}
+  | factor multOp unary {$1@[$2,$3]}
+  | unary {["",$1]}
 
 unary:
   | unaryOp primary {}
   | primary {}
 
 primary:
-  | LPAR exp RPAR {}
-  | ID {}
-  | constVal {}
-  | TYPE LPAR exp RPAR {} (*typecast*)
+  | LPAR exp RPAR {$2}
+  | ID {$1}
+  | constVal {$1}
+  | TYPE LPAR exp RPAR {castExp($1,$2)} (*typecast*)
   | FUNC delimited(LPAR, separated_list(COMMA, pair(ID, option(TYPE))), RPAR) block (* Function literal *)
   | primary LSQPAR exp RSQPAR {} (* index element *)
   | primary LSQPAR option(exp) COLON option(exp) RSQPAR {} (* slices *)
-  | ID DOT ID {} (* package.field *)
   | primary LPAR separated_list(COMMA, exp) RPAR {} (* function call *)
+  | ID DOT ID {} (* package.field *)
 
 constVal :
-  | INT {}
-  | FLOAT {}
-  | RUNESTRING {}
-  | OCTAL {}
-  | HEXA {}
-  | stringVal {}
+  | INT {ExpValInt ($1)}
+  | FLOAT {ExpValFloat ($1)}
+  | RUNESTRING {ExpValRune ($1)}
+  | OCTAL {ExpValOctal($1)}
+  | HEXA {ExpValHexa($1)}
+  | stringVal {$1}
 
 stringVal :
-  | RAWSTRING {}
-  | STRING {}
+  | RAWSTRING {ExpValRawString($1)}
+  | STRING {ExpValString($1)}
 
 logicOp:
   | logic {}
   | relOp {}
 logic:
-  | OR  {}
-  | AND {}
+  | OR  {$1}
+  | AND {$1}
 relOp:
-  | EEQUAL {}
-  | NOTEQ {}
-  | LT {}
-  | LTEQ {}
-  | GT {}
-  | GTEQ {}
+  | EEQUAL {$1}
+  | NOTEQ {$1}
+  | LT {$1}
+  | LTEQ {$1}
+  | GT {$1}
+  | GTEQ {$1}
 
 addOp:
-  | PLUS {}
-  | MINUS {}
-  | VERTICAL {}
-  | HAT {}
+  | PLUS {$1}
+  | MINUS {$1}
+  | VERTICAL {$1}
+  | HAT {$1}
 multOp:
   | STAR {}
   | SLASH {}
@@ -213,13 +223,13 @@ multOp:
   | LLT {} (*<<*)
   | GGT {} (*>>*)
 unaryOp:
-  | PLUS {}
-  | MINUS {}
-  | NOT {}
-  | HAT {}
-  | STAR {}
-  | AMPERSAND {}
-  | LTMIN {}
+  | PLUS {$1}
+  | MINUS {$1}
+  | NOT {$1}
+  | HAT {$1}
+  | STAR {$1}
+  | AMPERSAND {$1}
+  | LTMIN {$1}
 
 switchStat:
   | SWITCH option(exp) LCURL list(switchClause) RCURL {}
