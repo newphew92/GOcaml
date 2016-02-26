@@ -2,11 +2,7 @@ open Printf
 open Ast
 let file = "pretty.txt"
 let test = "test"
-let rec map f l oc=
-    fun () ->
-        match l () with
-            Nil -> Nil |
-            (Cons (a, r)) -> fun () -> (Cons (f a, map f r));;
+
 let rec printList (e) = match e with
 | hd::tl -> expr
 | _ -> expr2
