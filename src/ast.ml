@@ -1,5 +1,5 @@
 type ast ={
-  package: string;
+  package: string option;
   imports: import list;
   declarations: dec list;
 }
@@ -12,38 +12,36 @@ and statement =
   | ContinueS
   | DeclareS of dec
   | ForS of loopStat
-  | IfS of statement option * exp * block * block option (* else if is contained in second block *)
-  | PrintS of exp option
-  | PrintlnS of exp option
+  | IfS of statement option * exp * statement list * (statement list) option (* else if is contained in second block *)
+  | PrintS of exp list
+  | PrintlnS of exp list
   | ReturnS of exp option
-  | SwitchS of switchStat
+  | SwitchS of statement option * exp option * clause list
   | ExpS of exp
-  | AssignS of assStat
+  | AssignS of assignation
 and dec =
-  | FuncDec of function
-  | Vars of string list * string option * exp list (*VAR subvar*)
-  | Type of typeDec
+  | FunctionD of string * (string * string option) list * typeCall option * statement list
+  | VarsD of string list * string option * exp list (*VAR subvar*)
+  | TypeD of typeDec
 and varDec = string list * string option * exp list
 and typeDec =
   | Simple of (string * string) list
   | Struct of (string list option*string) list * string (*id list type string lit*)
-and function =
-  | Dec of string * (string * string option)list * block (*id, (id type)list, block*)
 and loopStat =
   | InfLoop of statement list
   | While of exp * statement list
-  | For of assStat * exp * assStat * statement list
-and switchStat = statement option * exp option * clause list
+  | For of assignation * exp * assignation * statement list
 and clause =
   | OptionSw of exp list * statement list
   | DefaultSw of statement list
-and assStat =
+and assignation =
   | Assign of assignee list * exp list
-  | Binary of assignee * string * exp
+  | DeclAssign of assignee list * exp list
+  | OpAssign of assignee * string * exp
   | Increment of assignee * string
 and assignee =
   | Variable of string
-  | Object of exp (* expect an assignable object *)
+  | Object of exp *  (* expect an assignable object *)
 and exp =
   | FloatConst of string
   | IntConst of string
@@ -56,8 +54,14 @@ and exp =
   | ExpId of string
   | BinaryOp of exp * string * exp
   | UnaryOp of string * exp
-  | ArrayElem of string * exp
-  | ArraySlice of string * exp * exp
-  | ObjectField of string * string
-  | FunctionCall of string * exp list
-  | Lambda of (string * string option) list * statement list
+  | ArrayElem of exp * exp
+  | ArraySlice of exp * exp option * exp option
+  | ObjectField of exp * string
+  | FunctionCall of exp * exp list
+  | Lambda of (string * string option) list * typeCall option * statement list
+  | TypeCast of string * exp
+and typeCall =
+  | BuiltInType of string
+  | DeclaredType of string
+  | SliceType
+  | ArrayType of exp
