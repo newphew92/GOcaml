@@ -1,70 +1,63 @@
 type ast ={
-  pack: string;
-  imports: string list;
-  top: topDec list;
-  stat: statement list;
+  package: string;
+  imports: import list;
+  declarations: dec list;
 }
-
+and import =
+  | GlobalImport  of string
+  | RenameImport of string * string (* this as that *)
+  | LiteralImport of string
 and statement =
-  | Break of string option
-  | Continue of string option
-  | Declare of dec
-  | Loop of loopStat
-  | If of ifStat
-  | Print of exp option
-  | Println of exp option
-  | Return of string option
-  | Switch of switchStat
-  | Exp of exp (*simpleStat*)
-  | Assign of assStat
-
-and topDec =
-  | Decs of dec
-  | Funs of funcDec
-
+  | BreakS
+  | ContinueS
+  | DeclareS of dec
+  | ForS of loopStat
+  | IfS of statement option * exp * block * block option (* else if is contained in second block *)
+  | PrintS of exp option
+  | PrintlnS of exp option
+  | ReturnS of exp option
+  | SwitchS of switchStat
+  | ExpS of exp
+  | AssignS of assStat
 and dec =
-  | Vars of varDec (*VAR subvar*)
+  | FuncDec of function
+  | Vars of string list * string option * exp list (*VAR subvar*)
   | Type of typeDec
 and varDec = string list * string option * exp list
 and typeDec =
   | Simple of (string * string) list
   | Struct of (string list option*string) list * string (*id list type string lit*)
-and funcDec =
+and function =
   | Dec of string * (string * string option)list * block (*id, (id type)list, block*)
 and loopStat =
-  | While of exp*block
-  | Classic of statement option * exp option * statement option
-and ifStat =
-  | Else of statement option * exp * block *block option (*if(){}else*)
-  | ElseIf of statement option * exp * block * ifStat option (*if(){}else if*)
-and switchStat = statement option * exp option * clause
-and clause = ((string * exp list) (*case/default  explist*)* statement list)list (*cases*)
+  | InfLoop of statement list
+  | While of exp * statement list
+  | For of assStat * exp * assStat * statement list
+and switchStat = statement option * exp option * clause list
+and clause =
+  | OptionSw of exp list * statement list
+  | DefaultSw of statement list
 and assStat =
   | Assign of assignee list * exp list
   | Binary of assignee * string * exp
-  | IncDec of assignee * string
-
+  | Increment of assignee * string
 and assignee =
-  | Name of string
-  | Index of exp
-
+  | Variable of string
+  | Object of exp (* expect an assignable object *)
 and exp =
-  | ExpValFloat of string
-  | ExpValInt of string
-  | ExpValOctal of string
-  | ExpValHexa of string
-  | ExpValBool of string
-  | ExpValString of string
-  | ExpValRawString of string
-  | ExpValRune of string
+  | FloatConst of string
+  | IntConst of string
+  | OctConst of string
+  | HexaConst of string
+  | BoolConst of string
+  | StringConst of string
+  | RawStringConst of string
+  | RuneConst of string
   | ExpId of string
-  | ExpArray of exp list
-  | ExpTuple of exp list
-  | ExpList of exp list
-
-and block = statement list
-
-
-
-let castExp (t,e) = match e with
-| _ -> (t,e)
+  | BinaryOp of exp * string * exp
+  | UnaryOp of string * exp
+  | ArrayElem of string * exp
+  | ArraySlice of string * exp * exp
+  | ObjectField of string * string
+  | FunctionCall of string * exp list
+  | Lambda of (string * string option) list * statement list

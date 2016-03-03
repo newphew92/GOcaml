@@ -87,12 +87,10 @@ importSpec:
   | ID stringVal {}
   | stringVal{}
 
-(* Conflicts in this thing *)
 dec:
-
   | VAR subDec {}
   | VAR LPAR separated_list(SEMICOLON, subDec) RPAR {}
-  | funcDeclr {} (* IN WEEDING CHECK THAT THIS IS NOT INSIDE A FUNC *)
+  | FUNC ID delimited(LPAR, separated_list(COMMA, pair(ID, option(TYPE))), RPAR) block {} (* IN WEEDING CHECK THAT THIS IS NOT INSIDE A FUNC *)
   | typeDec {}
 subDec:(*likewise, only relevant for group declarations*)
   | separated_nonempty_list(COMMA, ID) typeG {}
@@ -111,8 +109,6 @@ fieldDec:
   | ID SEMICOLON {}
   | STAR ID SEMICOLON {}
 
-funcDeclr:
-  | FUNC ID delimited(LPAR, separated_list(COMMA, pair(ID, option(TYPE))), RPAR) block {}
 block:
   | LCURL list(stat) RCURL {}
 
@@ -152,7 +148,7 @@ assignee:
   | primary LSQPAR exp RSQPAR {} (* TYPECHECKER WILL NEED TO GET SURE THIS IS AN ID *)
 
 incDec:
-  | assignee PPLUS {} (* equivalent to ID += ID *)
+  | assignee PPLUS {} (* equivalent to ID += 1 *)
   | assignee MMINUS {}
 
 print:
@@ -176,7 +172,7 @@ primary:
   | LPAR exp RPAR {$2}
   | ID {$1}
   | constVal {$1}
-  | TYPE LPAR exp RPAR {castExp($1,$2)} (*typecast*)
+  | TYPE LPAR exp RPAR {} (*typecast*)
   | FUNC delimited(LPAR, separated_list(COMMA, pair(ID, option(TYPE))), RPAR) block (* Function literal *)
   | primary LSQPAR exp RSQPAR {} (* index element *)
   | primary LSQPAR option(exp) COLON option(exp) RSQPAR {} (* slices *)
@@ -232,8 +228,7 @@ unaryOp:
   | LTMIN {$1}
 
 switchStat:
-  | SWITCH option(exp) LCURL list(switchClause) RCURL {}
-  | SWITCH simpleStat option(exp) LCURL list(switchClause) RCURL {}
+  | SWITCH option(simpleStat) option(exp) LCURL list(switchClause) RCURL {}
 switchClause:
   | switchCase COLON list(stat) {}
 switchCase:
@@ -242,8 +237,7 @@ switchCase:
 
 (* Around 10 conflicts in IF *)
 ifStat:
-  | IF simpleStat exp block option(elseStat) {}
-  | IF exp block option(elseStat) {}
+  | IF option(simpleStat) exp block option(elseStat) {}
 elseStat:
   | ELSE ifStat {}
   | ELSE block SEMICOLON {}
