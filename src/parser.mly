@@ -93,23 +93,22 @@ importSpec:
 dec:
   | VAR subDec {}
   | VAR LPAR separated_list(SEMICOLON, subDec) RPAR {}
-  | FUNC ID delimited(LPAR, separated_list(COMMA, pair(ID, option(TYPE))), RPAR) block {} (* IN WEEDING CHECK THAT THIS IS NOT INSIDE A FUNC *)
-  | typeDec {}
-subDec:(*likewise, only relevant for group declarations*)
-  | separated_nonempty_list(COMMA, ID) typeG {}
-  | separated_nonempty_list(COMMA, ID) option(typeG) EQUAL separated_nonempty_list(COMMA, exp) {}
+  | FUNC ID delimited(LPAR, separated_list(COMMA, pair(ID, option(TYPE))), RPAR) block { FunctionD $2 $3 (*the optional type*) $4 } (* IN WEEDING CHECK THAT THIS IS NOT INSIDE A FUNC *)
+  | typeDec { TypeD $1 }
+subDec:
+  | separated_nonempty_list(COMMA, ID) typeG { VarsD $1 $2}
+  | separated_nonempty_list(COMMA, ID) option(typeG) EQUAL separated_nonempty_list(COMMA, exp) { VarsDandAssign $1 $2 $4 }
 typeDec:
-  | TYPET pair(ID, TYPE) {}
-  | TYPET LPAR separated_list(SEMICOLON, pair(ID, TYPE)) RPAR {}
-  | TYPET pair(ID, structType) {}
+  | TYPET ID TYPE { Simple ($2 * $3) }
+  | TYPET LPAR separated_list(SEMICOLON, pair(ID, TYPE)) RPAR { Simple $3 }
+  | TYPET pair(ID, structType) { StructD $2 }
 structType:
-  | STRUCT delimited(LCURL, list(fieldDec), RCURL) {}
-
+  | STRUCT delimited(LCURL, list(fieldDec), RCURL) { $2 }
 fieldDec:
-  | separated_list(COMMA, ID) TYPE SEMICOLON {}
-  | separated_list(COMMA, ID) LSQPAR exp RSQPAR TYPE SEMICOLON {}
-  | ID SEMICOLON {}
-  | STAR ID SEMICOLON {}
+  | separated_list(COMMA, ID) TYPE SEMICOLON { FieldsBunch $1 $2 }
+  | separated_list(COMMA, ID) LSQPAR exp RSQPAR TYPE SEMICOLON { ListFieldsBunch $1 $3 $5 }
+  | ID SEMICOLON { Field $1 }
+  | STAR ID SEMICOLON { StarField $2}
 
 block:
   | LCURL list(stat) RCURL {$2}

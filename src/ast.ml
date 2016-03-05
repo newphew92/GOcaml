@@ -21,12 +21,17 @@ and statement =
   | AssignS of assignation
 and dec =
   | FunctionD of string * (string * string option) list * typeCall option * statement list
-  | VarsD of string list * string option * exp list (*VAR subvar*)
+  | VarsD of string list * typeCall
+  | VarsDandAssign of string list * typeCall option * exp list
   | TypeD of typeDec
-and varDec = string list * string option * exp list
+and structFieldDec
+  | FieldsBunch of string list * string
+  | ListFieldsBunch of string list * exp * string
+  | Field of string
+  | StarField of string
 and typeDec =
   | Simple of (string * string) list
-  | Struct of (string list option*string) list * string (*id list type string lit*)
+  | StructD of string * structFieldDec list
 and loopStat =
   | InfLoop of statement list
   | While of exp * statement list
