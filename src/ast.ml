@@ -1,70 +1,67 @@
 type ast ={
-  pack: string;
-  imports: string list;
-  top: topDec list;
-  stat: statement list;
+  package: string option;
+  declarations: dec list;
 }
-
 and statement =
-  | Break of string option
-  | Continue of string option
-  | Declare of dec
-  | Loop of loopStat
-  | If of ifStat
-  | Print of exp option
-  | Println of exp option
-  | Return of string option
-  | Switch of switchStat
-  | Exp of exp (*simpleStat*)
-  | Assign of assStat
-
-and topDec =
-  | Decs of dec
-  | Funs of funcDec
-
+  | BreakS
+  | ContinueS
+  | DeclareS of dec
+  | ForS of loopStat
+  | IfS of statement option * exp * statement list * (statement list) option (* else if is contained in second block *)
+  | PrintS of exp list
+  | PrintlnS of exp list
+  | ReturnS of exp option
+  | SwitchS of statement option * exp option * clause list
+  | ExpS of exp
+  | AssignS of assignation
 and dec =
-  | Vars of varDec (*VAR subvar*)
-  | Type of typeDec
-and varDec = string list * string option * exp list
+  | FunctionD of string * (string * string option) list * typeCall option * statement list
+  | VarsD of string list * typeCall
+  | VarsDandAssign of string list * typeCall option * exp list
+  | TypeD of typeDec
+and structFieldDec
+  | FieldsBunch of string list * string
+  | ListFieldsBunch of string list * exp * string
+  | Field of string
+  | StarField of string
 and typeDec =
   | Simple of (string * string) list
-  | Struct of (string list option*string) list * string (*id list type string lit*)
-and funcDec =
-  | Dec of string * (string * string option)list * block (*id, (id type)list, block*)
+  | StructD of string * structFieldDec list
 and loopStat =
-  | While of exp*block
-  | Classic of statement option * exp option * statement option
-and ifStat =
-  | Else of statement option * exp * block *block option (*if(){}else*)
-  | ElseIf of statement option * exp * block * ifStat option (*if(){}else if*)
-and switchStat = statement option * exp option * clause
-and clause = ((string * exp list) (*case/default  explist*)* statement list)list (*cases*)
-and assStat =
+  | InfLoop of statement list
+  | While of exp * statement list
+  | For of assignation * exp * assignation * statement list
+and clause =
+  | OptionSw of exp list * statement list
+  | DefaultSw of statement list
+and assignation =
   | Assign of assignee list * exp list
-  | Binary of assignee * string * exp
-  | IncDec of assignee * string
-
+  | DeclAssign of assignee list * exp list
+  | OpAssign of assignee * string * exp
+  | Increment of assignee * string
 and assignee =
-  | Name of string
-  | Index of exp
-
+  | Variable of string
+  | Object of exp  (* expect an assignable object *)
 and exp =
-  | ExpValFloat of string
-  | ExpValInt of string
-  | ExpValOctal of string
-  | ExpValHexa of string
-  | ExpValBool of string
-  | ExpValString of string
-  | ExpValRawString of string
-  | ExpValRune of string
+  | FloatConst of string
+  | IntConst of string
+  | OctConst of string
+  | HexaConst of string
+  | BoolConst of string
+  | StringConst of string
+  | RawStringConst of string
+  | RuneConst of string
   | ExpId of string
-  | ExpArray of exp list
-  | ExpTuple of exp list
-  | ExpList of exp list
-
-and block = statement list
-
-
-
-let castExp (t,e) = match e with
-| _ -> (t,e)
+  | BinaryOp of exp * string * exp
+  | UnaryOp of string * exp
+  | ArrayElem of exp * exp
+  | ArraySlice of exp * exp option * exp option
+  | ObjectField of exp * string
+  | FunctionCall of exp * exp list
+  | Lambda of (string * string option) list * typeCall option * statement list
+  | TypeCast of string * exp
+and typeCall =
+  | BuiltInType of string
+  | DeclaredType of string
+  | SliceType
+  | ArrayType of exp

@@ -56,6 +56,7 @@
 %token VERTICAL
 
 %token <string> ID
+%left SEMICOLON
 %left OR
 %left AND
 %nonassoc NOT
@@ -74,130 +75,168 @@
 
 (* Rules *)
 prog:
-  | option(packDec) list(importDec) list(terminated(dec, SEMICOLON)) EOF { print_endline "finish"}
+  | option(packDec) list(terminated(dec, SEMICOLON)) EOF {
+    {package=$1; declarations=$2}
+  }
 
 packDec: (*only one package declaration allowed*)
-  | PACKAGE ID SEMICOLON  {}
+  | PACKAGE ID SEMICOLON  { $2 }
 
-importDec:
-  | IMPORT importSpec SEMICOLON {}
-  | IMPORT LPAR separated_list(SEMICOLON, importSpec) RPAR SEMICOLON {}
-importSpec:
-  | DOT stringVal {}
-  | ID stringVal {}
-  | stringVal{}
-
-(* Conflicts in this thing *)
 dec:
-
   | VAR subDec {}
-  | VAR LPAR separated_list(SEMICOLON, subDec) RPAR {}
-  | funcDeclr {} (* IN WEEDING CHECK THAT THIS IS NOT INSIDE A FUNC *)
-  | typeDec {}
-subDec:(*likewise, only relevant for group declarations*)
-  | separated_nonempty_list(COMMA, ID) typeG {}
-  | separated_nonempty_list(COMMA, ID) option(typeG) EQUAL separated_nonempty_list(COMMA, exp) {}
+  | VAR LPAR subDec_list_separated_semicolon RPAR {}
+  | FUNC ID LPAR id_list_with_types RPAR block { FunctionD $3 $4 (*the optional type*) $5 } (* IN WEEDING CHECK THAT THIS IS NOT INSIDE A FUNC *)
+  | typeDec { TypeD $1 }
+
+subDec_list_separated_semicolon:
+  | {[]}
+  | non_empty_subDec_list_separated_semicolon { $1 }
+
+non_empty_subDec_list_separated_semicolon:
+  | subDec { [$1] }
+  | subDec SEMICOLON non_empty_subDec_list_separated_semicolon { $1 :: $3 }
+
+subDec:
+  | non_empty_id_list typeG { VarsD $1 $2}
+  | non_empty_id_list option(typeG) EQUAL non_empty_exp_list { VarsDandAssign $1 $2 $4 }
 typeDec:
-  | TYPET pair(ID, TYPE) {}
-  | TYPET LPAR separated_list(SEMICOLON, pair(ID, TYPE)) RPAR {}
-  | TYPET pair(ID, structType) {}
+  | TYPET ID TYPE { Simple ($2 * $3) }
+  | TYPET LPAR id_list_with_types_separated_semicolon RPAR { Simple $3 }
+  | TYPET ID structType { StructD ($2 * $3) }
 structType:
-  | STRUCT delimited(LCURL, list(fieldDec), RCURL) {}
-
-(* Some conflicts due to the STAR *)
+  | STRUCT LCURL list(fieldDec) RCURL { $3 }
 fieldDec:
-  | separated_list(COMMA, ID) TYPE SEMICOLON {}
-  | separated_list(COMMA, ID) LSQPAR exp RSQPAR TYPE SEMICOLON {}
-  | ID SEMICOLON {}
-  | STAR ID SEMICOLON {}
+  | id_list TYPE SEMICOLON { FieldsBunch $1 $2 }
+  | id_list LSQPAR exp RSQPAR TYPE SEMICOLON { ListFieldsBunch $1 $3 $5 }
+  | ID SEMICOLON { Field $1 }
+  | STAR ID SEMICOLON { StarField $2}
 
-funcDeclr:
-  | FUNC ID delimited(LPAR, separated_list(COMMA, pair(ID, option(TYPE))), RPAR) block {}
 block:
-  | LCURL list(stat) RCURL {}
+  | LCURL stat_list RCURL {$2}
+
+stat_list:
+ | {[]}
+ | non_empty_stat_list { $1 }
+
+ non_empty_stat_list:
+   | stat { [$1] }
+   | stat non_empty_stat_list { $1 :: $2 }
 
 typeG: (*basic types*)
-  | TYPE {}
-  | LSQPAR RSQPAR {} (*slice*)
-  | LSQPAR exp RSQPAR {} (*array*)
+  | TYPE { BuiltInType $1}
+  | LSQPAR RSQPAR { SliceType } (*slice*)
+  | LSQPAR exp RSQPAR { ArrayType $2 } (*array*)
+  | ID { DeclaredType $1 }
 
 stat:
-  | simpleStat SEMICOLON {} (* Assign and expr *)
-  | dec SEMICOLON {}
-  | print SEMICOLON {}
-  | ifStat SEMICOLON {}
-  | switchStat SEMICOLON {}
-  | forStat SEMICOLON {}
-  | BREAK SEMICOLON {}
-  | CONTINUE SEMICOLON {}
-  | RETURN option(exp) SEMICOLON {}
+  | simpleStat SEMICOLON { $1 } (* Assign and expr *)
+  | dec SEMICOLON { $1 }
+  | print SEMICOLON { $1 }
+  | ifStat SEMICOLON { $1  }
+  | switchStat SEMICOLON { $1 }
+  | forStat SEMICOLON { ForS $1 }
+  | BREAK SEMICOLON { BreakS }
+  | CONTINUE SEMICOLON { ContinueS }
+  | RETURN option(exp) SEMICOLON { ReturnS $2 }
 
 assign:
-  | separated_nonempty_list(COMMA, assignee) EQUAL separated_nonempty_list(COMMA, exp) {}
-  | separated_list(COMMA, assignee) COLEQ separated_list(COMMA, exp) {}
-  | assignee PLUSEQ exp {}
-  | assignee MINEQ exp {}
-  | assignee STAREQ exp {}
-  | assignee SLASHEQ exp {}
-  | assignee PEREQ exp {}
-  | assignee VERTEQ exp {}
-  | assignee HATEQ exp {}
-  | assignee LLTEQ exp {}
-  | assignee GGTEQ exp {}
-  | assignee AMPHATEQ exp {}
-  | incDec {}
+  | non_empty_assignee_list EQUAL non_empty_exp_list { Assign $1 $3 }
+  | non_empty_assignee_list COLEQ non_empty_exp_list { DeclAssign $1 $3 }
+  | assignee PLUSEQ exp { OpAssign $1 $2 $3 }
+  | assignee MINEQ exp { OpAssign $1 $2 $3 }
+  | assignee STAREQ exp { OpAssign $1 $2 $3 }
+  | assignee SLASHEQ exp { OpAssign $1 $2 $3 }
+  | assignee PEREQ exp { OpAssign $1 $2 $3 }
+  | assignee VERTEQ exp { OpAssign $1 $2 $3 }
+  | assignee HATEQ exp { OpAssign $1 $2 $3 }
+  | assignee LLTEQ exp { OpAssign $1 $2 $3 }
+  | assignee GGTEQ exp { OpAssign $1 $2 $3 }
+  | assignee AMPHATEQ exp { OpAssign $1 $2 $3 }
+  | incDec { $1 }
 
 assignee:
-  | ID {}
-  | primary LSQPAR exp RSQPAR {} (* TYPECHECKER WILL NEED TO GET SURE THIS IS AN ID *)
+  | ID { Variable $1 }
+  | primary LSQPAR exp RSQPAR { Object (ArrayElem $1 $3) } (* TYPECHECKER WILL NEED TO GET SURE THIS IS AN ID *)
+
+assignee_list:
+  | { [] }
+  | non_empty_id_list_with_types { $1 }
+
+non_empty_assignee_list:
+  | assignee { [$1] }
+  | assignee COMMA non_empty_assignee_list { $1 :: $3 }
 
 incDec:
-  | assignee PPLUS {} (* equivalent to ID += ID *)
-  | assignee MMINUS {}
+  | assignee PPLUS { Increment $1 $2 } (* equivalent to ID += 1 *)
+  | assignee MMINUS { Increment $1 $2 }
 
 print:
-  | PRINT delimited(LPAR, separated_list(COMMA, exp), RPAR) SEMICOLON {}
-  | PRINTLN delimited(LPAR, separated_list(COMMA, exp), RPAR) SEMICOLON {}
+  | PRINT LPAR exp_list RPAR SEMICOLON { PrintS $3 }
+  | PRINTLN LPAR exp_list RPAR SEMICOLON { PrintlnS $3 }
 
 exp:
-  | exp logicOp factor {}
-  | exp addOp factor {}
-  | factor {}
+  | exp logicOp factor { BinaryOp $1 $2 $3 }
+  | exp addOp factor { BinaryOp $1 $2 $3 }
+  | factor { $1 }
 
 factor:
-  | factor multOp unary {$1@[$2,$3]}
-  | unary {["",$1]}
+  | factor multOp unary { BinaryOp $1 $2 $3 }
+  | unary { $1 }
 
 unary:
-  | unaryOp primary {}
-  | primary {}
+  | unaryOp primary { UnaryOp $1 $2 }
+  | primary { $1 }
 
 primary:
   | LPAR exp RPAR {$2}
   | ID {$1}
   | constVal {$1}
-  | TYPE LPAR exp RPAR {castExp($1,$2)} (*typecast*)
-  | FUNC delimited(LPAR, separated_list(COMMA, pair(ID, option(TYPE))), RPAR) block (* Function literal *)
-  | primary LSQPAR exp RSQPAR {} (* index element *)
-  | primary LSQPAR option(exp) COLON option(exp) RSQPAR {} (* slices *)
-  | primary LPAR separated_list(COMMA, exp) RPAR {} (* function call *)
-  | ID DOT ID {} (* package.field *)
+  | TYPE LPAR exp RPAR {TypeCast $1 $3} (*typecast*)
+  | FUNC LPAR id_list_with_types RPAR option(typeG) block {Lambda $3 $4 $5} (* Function literal *)
+  | primary LSQPAR exp RSQPAR {ArrayElem $1 $3} (* index element *)
+  | primary LSQPAR option(exp) COLON option(exp) RSQPAR {ArraySlice $1 $3 $5} (* slices *)
+  | primary LPAR exp_list RPAR {FunctionCall $1 $3} (* function call *)
+  | ID DOT ID {ObjectField $1 $3} (* package.field *)
+
+id_list:
+  | { [] }
+  | non_empty_id_list { $1 }
+
+non_empty_id_list:
+  | ID { [$1] }
+  | ID COMMA non_empty_id_list { $1 :: $3 }
+
+id_list_with_types:
+  | { [] }
+  | non_empty_id_list_with_types { $1 }
+
+non_empty_id_list_with_types:
+  | ID option(TYPE) { [($1 * $2)] }
+  | ID option(TYPE) COMMA non_empty_id_list_with_types { ($1 * $2) :: $4 }
+
+id_list_with_types_separated_semicolon:
+  | { [] }
+  | non_empty_id_list_with_types_separated_semicolon { $1 }
+
+non_empty_id_list_with_types_separated_semicolon:
+  | ID option(TYPE) { [($1 * $2)] }
+  | ID option(TYPE) SEMICOLON non_empty_id_list_with_types_separated_semicolon { ($1 * $2) :: $4 }
 
 constVal :
-  | INT {ExpValInt ($1)}
-  | FLOAT {ExpValFloat ($1)}
-  | RUNESTRING {ExpValRune ($1)}
-  | OCTAL {ExpValOctal($1)}
-  | HEXA {ExpValHexa($1)}
+  | INT {IntConst $1}
+  | FLOAT {FloatConst $1}
+  | RUNESTRING {RuneConst $1}
+  | OCTAL {OctalConst $1}
+  | HEXA {HexaConst $1}
   | stringVal {$1}
 
 stringVal :
-  | RAWSTRING {ExpValRawString($1)}
-  | STRING {ExpValString($1)}
+  | RAWSTRING {RawStringConst $1}
+  | STRING {StringConst $1}
 
 logicOp:
-  | logic {}
-  | relOp {}
+  | logic {$1}
+  | relOp {$1}
 logic:
   | OR  {$1}
   | AND {$1}
@@ -215,13 +254,13 @@ addOp:
   | VERTICAL {$1}
   | HAT {$1}
 multOp:
-  | STAR {}
-  | SLASH {}
-  | AMPERSAND {}
-  | AMPHAT {}
-  | PERCENT {}
-  | LLT {} (*<<*)
-  | GGT {} (*>>*)
+  | STAR {$1}
+  | SLASH {$1}
+  | AMPERSAND {$1}
+  | AMPHAT {$1}
+  | PERCENT {$1}
+  | LLT {$1} (*<<*)
+  | GGT {$1} (*>>*)
 unaryOp:
   | PLUS {$1}
   | MINUS {$1}
@@ -232,28 +271,36 @@ unaryOp:
   | LTMIN {$1}
 
 switchStat:
-  | SWITCH option(exp) LCURL list(switchClause) RCURL {}
-  | SWITCH simpleStat option(exp) LCURL list(switchClause) RCURL {}
+  | SWITCH option(exp) LCURL list(switchClause) RCURL {SwitchS None $3 $5}
+  | SWITCH exp SEMICOLON option(exp) LCURL list(switchClause) RCURL {SwitchS (Some (ExpS $2)) $3 $5}
+  | SWITCH assign SEMICOLON option(exp) LCURL list(switchClause) RCURL {SwitchS (Some (AssignS $2)) $3 $5}
 switchClause:
-  | switchCase COLON list(stat) {}
-switchCase:
-  | CASE separated_list(COMMA, exp) {}
-  | DEFAULT {}
+  | CASE exp_list COLON stat_list {OptionSw $2 $4}
+  | DEFAULT COLON stat_list {DefaultSw $3}
 
-(* Around 10 conflicts in IF *)
+exp_list:
+  | {[]}
+  | non_empty_exp_list { $1 }
+
+non_empty_exp_list:
+  | exp { [$1]}
+  | exp COMMA non_empty_exp_list { $1 :: $3 }
+
 ifStat:
-  | IF simpleStat exp block option(elseStat) {}
-  | IF exp block option(elseStat) {}
+  | IF exp block option(elseStat) {IfS None $3 $4}
+  | IF exp SEMICOLON exp block option(elseStat) {IfS (Some (ExpS $2)) $3 $4}
+  | IF assign SEMICOLON exp block option(elseStat) {IfS (Some (AssignS $2)) $3 $4}
+
 elseStat:
-  | ELSE ifStat {}
-  | ELSE block SEMICOLON {}
+  | ELSE ifStat { [$2] }
+  | ELSE block SEMICOLON { $2 }
 
 simpleStat:
-  | exp SEMICOLON {}
-  | assign SEMICOLON {}
+  | exp SEMICOLON { ExpS $1 }
+  | assign SEMICOLON { AssignS $1 }
 
 forStat:
-  | FOR block SEMICOLON {}
-  | FOR exp block SEMICOLON {}
-  | FOR assign SEMICOLON exp SEMICOLON incDec block SEMICOLON {}
+  | FOR block SEMICOLON { InfLoop $2 }
+  | FOR exp block SEMICOLON { While $2 $3 }
+  | FOR assign SEMICOLON exp SEMICOLON incDec block SEMICOLON { For $2 $4 $6 $7 }
 ;
