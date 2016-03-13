@@ -1,13 +1,48 @@
 type ast ={
   package: string option;
-  imports: import list;
   declarations: dec list;
 }
-and import =
-  | GlobalImport  of string
-  | RenameImport of string * string (* this as that *)
-  | LiteralImport of string
-and statement =
+and statement = {
+  theType: string;
+  options: statementOptions;
+}
+and dec = {
+  theType: string;
+  options: decOptions;
+}
+and structFieldDec = {
+  theType:string;
+  options: structFieldDecOptions;
+}
+and typeDec = {
+  theType: string;
+  options: typeDecOptions;
+}
+and loopStat = {
+  theType: string;
+  options: loopStatOptions;
+}
+and clause ={
+  theType: string;
+  options: clauseOptions;
+}
+and assignation =  {
+  theType: string;
+  options: assignationOptions;
+}
+and assignee = {
+  theType: string;
+  options: assigneeOptions;
+}
+and exp = {
+  theType: string;
+  options: expOptions;
+}
+and typeCall = {
+  theType: string;
+  options: typeCallOptions;
+}
+and statementOptions =
   | BreakS
   | ContinueS
   | DeclareS of dec
@@ -19,35 +54,35 @@ and statement =
   | SwitchS of statement option * exp option * clause list
   | ExpS of exp
   | AssignS of assignation
-and dec =
+and decOptions =
   | FunctionD of string * (string * string option) list * typeCall option * statement list
   | VarsD of string list * typeCall
   | VarsDandAssign of string list * typeCall option * exp list
   | TypeD of typeDec
-and structFieldDec
+and structFieldDecOptions =
   | FieldsBunch of string list * string
   | ListFieldsBunch of string list * exp * string
   | Field of string
   | StarField of string
-and typeDec =
+and typeDecOptions =
   | Simple of (string * string) list
   | StructD of string * structFieldDec list
-and loopStat =
+and loopStatOptions =
   | InfLoop of statement list
   | While of exp * statement list
   | For of assignation * exp * assignation * statement list
-and clause =
+and clauseOptions =
   | OptionSw of exp list * statement list
   | DefaultSw of statement list
-and assignation =
+and assignationOptions =
   | Assign of assignee list * exp list
   | DeclAssign of assignee list * exp list
   | OpAssign of assignee * string * exp
   | Increment of assignee * string
-and assignee =
+and assigneeOptions =
   | Variable of string
-  | Object of exp *  (* expect an assignable object *)
-and exp =
+  | Object of exp (* expect an assignable object *)
+and expOptions =
   | FloatConst of string
   | IntConst of string
   | OctConst of string
@@ -65,7 +100,7 @@ and exp =
   | FunctionCall of exp * exp list
   | Lambda of (string * string option) list * typeCall option * statement list
   | TypeCast of string * exp
-and typeCall =
+and typeCallOptions =
   | BuiltInType of string
   | DeclaredType of string
   | SliceType
