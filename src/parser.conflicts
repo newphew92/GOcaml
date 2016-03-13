@@ -1,0 +1,30 @@
+
+** Conflict (shift/reduce) in state 9.
+** Token involved: TYPE
+** This state is reached from prog after reading:
+
+option(packDec) VAR ID 
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+prog 
+option(packDec) list(terminated(dec,SEMICOLON)) EOF 
+                dec SEMICOLON list(terminated(dec,SEMICOLON)) 
+                VAR subDec 
+                    (?)
+
+** In state 9, looking ahead at TYPE, reducing production
+** option(TYPE) -> 
+** is permitted because of the following sub-derivation:
+
+non_empty_id_list_with_types typeG // lookahead token appears because typeG can begin with TYPE
+ID option(TYPE) // lookahead token is inherited
+   . 
+
+** In state 9, looking ahead at TYPE, shifting is permitted
+** because of the following sub-derivation:
+
+non_empty_id_list_with_types typeG 
+ID option(TYPE) 
+   . TYPE 
