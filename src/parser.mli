@@ -1,5 +1,4 @@
-
-(* The type of tokens. *)
+exception Error
 
 type token = 
   | VERTICAL
@@ -18,7 +17,6 @@ type token =
   | SELECT
   | RUNESTRING of (string)
   | RSQPAR
-  | RSQPA
   | RPAR
   | RETURN
   | RCURL
@@ -88,10 +86,5 @@ type token =
   | AMPHAT
   | AMPERSAND
 
-(* This exception is raised by the monolithic API functions. *)
-
-exception Error
-
-(* The monolithic API. *)
 
 val prog: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (int)

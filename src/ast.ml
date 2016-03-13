@@ -1,12 +1,7 @@
 type ast ={
   package: string option;
-  imports: import list;
   declarations: dec list;
 }
-and import =
-  | GlobalImport  of string
-  | RenameImport of string * string (* this as that *)
-  | LiteralImport of string
 and statement =
   | BreakS
   | ContinueS
@@ -46,7 +41,7 @@ and assignation =
   | Increment of assignee * string
 and assignee =
   | Variable of string
-  | Object of exp *  (* expect an assignable object *)
+  | Object of exp  (* expect an assignable object *)
 and exp =
   | FloatConst of string
   | IntConst of string
