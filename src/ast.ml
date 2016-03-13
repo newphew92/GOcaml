@@ -3,43 +3,43 @@ type ast ={
   declarations: dec list;
 }
 and statement = {
-  theType: string;
+  theType: string option;
   options: statementOptions;
 }
 and dec = {
-  theType: string;
+  theType: string option;
   options: decOptions;
 }
 and structFieldDec = {
-  theType:string;
+  theType: string option;
   options: structFieldDecOptions;
 }
 and typeDec = {
-  theType: string;
+  theType: string option;
   options: typeDecOptions;
 }
 and loopStat = {
-  theType: string;
+  theType: string option;
   options: loopStatOptions;
 }
 and clause ={
-  theType: string;
+  theType: string option;
   options: clauseOptions;
 }
 and assignation =  {
-  theType: string;
+  theType: string option;
   options: assignationOptions;
 }
 and assignee = {
-  theType: string;
+  theType: string option;
   options: assigneeOptions;
 }
 and exp = {
-  theType: string;
+  theType: string option;
   options: expOptions;
 }
 and typeCall = {
-  theType: string;
+  theType: string option;
   options: typeCallOptions;
 }
 and statementOptions =
@@ -55,6 +55,7 @@ and statementOptions =
   | ExpS of exp
   | AssignS of assignation
 and decOptions =
+  | ListedVarD of dec list
   | FunctionD of string * (string * string option) list * typeCall option * statement list
   | VarsD of string list * typeCall
   | VarsDandAssign of string list * typeCall option * exp list
@@ -63,7 +64,6 @@ and structFieldDecOptions =
   | FieldsBunch of string list * string
   | ListFieldsBunch of string list * exp * string
   | Field of string
-  | StarField of string
 and typeDecOptions =
   | Simple of (string * string) list
   | StructD of string * structFieldDec list
