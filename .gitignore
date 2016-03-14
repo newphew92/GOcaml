@@ -1,3 +1,4 @@
 ./syntax.pdf
 src/*.mli
 src/*.ml
+!src/weeder.ml
