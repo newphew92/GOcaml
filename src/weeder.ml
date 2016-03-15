@@ -123,11 +123,10 @@ and weedStructFieldDec field inLoop inFuncBlock =
   (* t: string option containing None at that point *)
   let t = declr.theType;
   match field.options with
-    | ListFieldsBunch (sl, e, s) -> (* sl: string list, e: exp, s: string *)
+    | FieldsBunch (sl, tc) -> (* sl: string list, tc: typeCall *)
       { theType=t;
-        options=ListFieldsBunch (weedExp e inLoop inFuncBlock)
+        options=FieldsBunch (sl, weedTypeCall tc inLoop inFuncBlock)
       }
-    | o -> { theType=t; options=o } (* cases: Field FieldsBunch *)
 
 and weedTypeDec tDec inLoop inFuncBlock =
   (* t: string option containing None at that point *)
@@ -243,14 +242,76 @@ and weedAssignee assig inLoop inFuncBlock =
           | _ -> raise WeederSyntax "cannot assign to expression"
       }
 and weedExp ex inLoop inFuncBlock =
-
+  (* t: string option containing None at that point *)
+  let t = ex.theType;
+  { theType=t,
+    options=match ex.options with
+      | BinaryOp (e1, op, e2) ->  (* e1: exp, op: string, e2: exp*)
+        BinaryOp (
+          weedExp e1 inLoop inFuncBlock,
+          op,
+          weedExp e2 inLoop inFuncBlock
+          )
+      (* op: string, e: exp *)
+      | UnaryOp (op, e) ->
+        UnaryOp (
+          op,
+          weedExp e inLoop inFuncBlock
+          )
+      (* arr: exp, ind: exp *)
+      | ArrayElem (arr, ind) ->
+        ArrayElem (
+          weedExp arr inLoop inFuncBlock,
+          weedExp ind inLoop inFuncBlock
+          )
+      (* arr: exp, ofst: exp option, oend: exp option *)
+      | ArraySlice (arr, ofst, oend) ->
+        ArraySlice (
+          weedExp arr inLoop inFuncBlock,
+          weedOptionalExp ofst inLoop inFuncBlock,
+          weedOptionalExp oend inLoop inFuncBlock
+          )
+      (* obj: exp, fld: string *)
+      | ObjectField (obj, fld) ->
+        ObjectField (
+          weedExp obj inLoop inFuncBlock,
+          fld
+          )
+      (* fn: exp, args: exp list *)
+      | FunctionCall (fn, args) ->
+        FunctionCall (
+          weedExp fn inLoop inFuncBlock,
+          map (fun x -> weedExp x inLoop inFuncBlock) args
+          )
+      (* args: (string * string option) list,
+      fnt: typeCall option (function type), bloc: statement list *)
+      | Lambda (args, fnt, bloc) ->
+        Lambda (
+          args,
+          weedTypeCall fnt inLoop inFuncBlock,
+          map (fun x -> weedStatement x inLoop true ) bloc
+          )
+      (* tp: string (type), e: exp *)
+      | TypeCast (tp, e) ->
+        TypeCast (
+          tp,
+          weedExp e inLoop inFuncBlock
+          )
+      | _ -> ex (* cases: literals or variable name *)
+    }
 and weedOptionalExp ex inLoop inFuncBlock =
   match ex with
     | None -> None
     | Some e -> Some (weedExp e inLoop inFuncBlock)
 
 and weedTypeCall tc inLoop inFuncBlock =
-
+  (* t: string option containing None at that point *)
+  let t = tc.theType;
+  { theType=t,
+    options=match tc.options with
+      | ArrayType ind -> (* ind: exp *)
+        ArrayType (weedExp ind inLoop inFuncBlock)
+  }
 and weedOptionaltypeCall tc inLoop inFuncBlock =
   match tc with
     | None -> None

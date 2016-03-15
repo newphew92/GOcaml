@@ -61,11 +61,9 @@ and decOptions =
   | VarsDandAssign of string list * typeCall option * exp list
   | TypeD of typeDec
 and structFieldDecOptions =
-  | FieldsBunch of string list * string
-  | ListFieldsBunch of string list * exp * string
-  | Field of string
+  | FieldsBunch of string list * typeCall
 and typeDecOptions =
-  | Simple of (string * string) list
+  | Simple of (string * typeCall) list
   | StructD of string * structFieldDec list
 and loopStatOptions =
   | InfLoop of statement list

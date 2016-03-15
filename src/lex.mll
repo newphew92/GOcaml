@@ -7,6 +7,7 @@
   open Parser
 
   exception SyntaxError of string
+  exception UnusedToken of string
 
   let next_line lexbuf =
     let pos = lexbuf.lex_curr_p in
@@ -128,7 +129,7 @@ rule read =
   | "!="            { semiFlagDown();  NOTEQ}
   | "<="            { semiFlagDown();  LTEQ }
   | ">="            { semiFlagDown();  GTEQ }
-  | "..."           { semiFlagDown();  DOTS }
+  | "..."           { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
   | '('             { semiFlagDown();  LPAR }
   | ')'             { semiFlagUp();  RPAR }
   | '['             { semiFlagDown();  LSQPAR}
@@ -138,31 +139,31 @@ rule read =
   | ','             { semiFlagDown();  COMMA }
   | '.'             { semiFlagDown();  DOT }
   | ':'             { semiFlagDown();  COLON }
-  | "append"         { semiFlagDown();  APPEND }
+  | "append"         { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
   | "eof"            { semiFlagDown();  EOF }
   | "break"          { semiFlagUp();  BREAK }
   | "case"           { semiFlagDown();  CASE }
-  | "chan"           { semiFlagDown();  CHAN }
-  | "const"          { semiFlagDown();  CONST }
+  | "chan"           { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
+  | "const"          { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
   | "continue"       { semiFlagUp();  CONTINUE }
   | "default"        { semiFlagDown();  DEFAULT }
-  | "defer"          { semiFlagDown();  DEFER }
+  | "defer"          { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
   | "else"           { semiFlagDown();  ELSE }
-  | "fallthrough"    { semiFlagUp();  FALLTHROUGH }
+  | "fallthrough"    { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
   | "for"            { semiFlagDown();  FOR }
   | "func"           { semiFlagDown();  FUNC }
-  | "go"             { semiFlagDown();  GO }
-  | "goto"           { semiFlagDown();  GOTO }
+  | "go"             { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
+  | "goto"           { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
   | "if"             { semiFlagDown();  IF }
-  | "import"         { semiFlagDown();  IMPORT }
-  | "interface"      { semiFlagDown();  INTERFACE }
-  | "map"            { semiFlagDown();  MAP }
+  | "import"         { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
+  | "interface"      { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
+  | "map"            { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
   | "package"        { semiFlagDown();  PACKAGE }
   | "print"          { semiFlagDown();  PRINT }
   | "println"        { semiFlagDown();  PRINTLN }
-  | "range"          { semiFlagDown();  RANGE }
+  | "range"          { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
   | "return"         { semiFlagUp();  RETURN }
-  | "select"         { semiFlagDown();  SELECT }
+  | "select"         { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
   | "struct"         { semiFlagDown();  STRUCT }
   | "switch"         { semiFlagDown();  SWITCH }
   | "type"           { semiFlagDown();  TYPET }

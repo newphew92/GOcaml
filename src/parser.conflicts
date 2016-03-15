@@ -1,10 +1,9 @@
 
-** Conflict (reduce/reduce) in state 133.
-** Tokens involved: VERTEQ STAREQ SLASHEQ PPLUS PLUSEQ PEREQ MMINUS MINEQ LLTEQ HATEQ GGTEQ EQUAL COMMA COLEQ AMPHATEQ
-** The following explanations concentrate on token VERTEQ.
+** Conflict (shift/reduce) in state 71.
+** Token involved: ID
 ** This state is reached from prog after reading:
 
-option(packDec) FUNC ID LPAR id_list_with_types RPAR LCURL ID 
+option(packDec) TYPET ID STRUCT LCURL fieldDec 
 
 ** The derivations that appear below have the following common factor:
 ** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
@@ -12,24 +11,51 @@ option(packDec) FUNC ID LPAR id_list_with_types RPAR LCURL ID
 prog 
 option(packDec) list(terminated(dec,SEMICOLON)) EOF 
                 dec SEMICOLON list(terminated(dec,SEMICOLON)) 
-                FUNC ID LPAR id_list_with_types RPAR block 
-                                                     LCURL stat_list RCURL 
-                                                           non_empty_stat_list 
-                                                           stat 
-                                                           simpleStat SEMICOLON 
-                                                           assign SEMICOLON 
-                                                           assignee VERTEQ exp // lookahead token appears
-                                                           (?)
+                typeDec 
+                TYPET ID structType 
+                         STRUCT LCURL list(fieldDec) RCURL 
+                                      fieldDec list(fieldDec) 
+                                               fieldDec list(fieldDec) 
+                                               (?)
 
-** In state 133, looking ahead at VERTEQ, reducing production
-** assignee -> ID 
+** In state 71, looking ahead at ID, shifting is permitted
+** because of the following sub-derivation:
+
+. ID SEMICOLON 
+
+** In state 71, looking ahead at ID, reducing production
+** id_list -> 
 ** is permitted because of the following sub-derivation:
 
-ID . 
+id_list typeG SEMICOLON // lookahead token appears because typeG can begin with ID
+. 
 
-** In state 133, looking ahead at VERTEQ, reducing production
-** primary -> ID 
+** Conflict (shift/reduce) in state 62.
+** Token involved: ID
+** This state is reached from prog after reading:
+
+option(packDec) TYPET ID STRUCT LCURL 
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+prog 
+option(packDec) list(terminated(dec,SEMICOLON)) EOF 
+                dec SEMICOLON list(terminated(dec,SEMICOLON)) 
+                typeDec 
+                TYPET ID structType 
+                         STRUCT LCURL list(fieldDec) RCURL 
+                                      fieldDec list(fieldDec) 
+                                      (?)
+
+** In state 62, looking ahead at ID, shifting is permitted
+** because of the following sub-derivation:
+
+. ID SEMICOLON 
+
+** In state 62, looking ahead at ID, reducing production
+** id_list -> 
 ** is permitted because of the following sub-derivation:
 
-primary // lookahead token is inherited
-ID . 
+id_list typeG SEMICOLON // lookahead token appears because typeG can begin with ID
+. 
