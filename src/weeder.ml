@@ -129,16 +129,119 @@ and weedStructFieldDec field inLoop inFuncBlock =
       }
     | o -> { theType=t; options=o } (* cases: Field FieldsBunch *)
 
-and weedTypeDec tyDec inLoop inFuncBlock =
+and weedTypeDec tDec inLoop inFuncBlock =
+  (* t: string option containing None at that point *)
+  let t = tDec.theType;
+  match tDec.options with
+    | StructD (s, sfdl) -> (* s: string, sfdl: StructFieldDec list *)
+      { theType=t;
+        options= StrucD (
+          map (fun x -> weedStructFieldDec x inLoop inFuncBlock) sfdl
+          )
+      }
+    | o -> { theType=t; options = o} (* case: Simple *)
 
 and weedLoopStat lStat inLoop inFuncBlock =
+  (* t: string option containing None at that point *)
+  let t = lStat.theType;
+  match lStat.options with
+    | InfLoop sl -> (*sl: statement list *)
+      { theType=t;
+        options=InfLoop (
+          map (fun x -> weedStatement x inLoop inFuncBlock) sl
+        )
+      }
+    (* e: exp, sl: statement list *)
+    | While (e, sl) ->
+      { theType = t;
+        options= While (
+            weedExp e,
+            map (fun x -> weedStatement x inLoop inFuncBlock) sl
+          )
+      }
+    (* ac: assignation (init counter), e: exp, incr: assignation *)
+    | For (ac, e, incr) ->
+      (* incr is an Increment (from parser) *)
+      { theType=t;
+        options= For (
+          weedAssignation ac inLoop inFuncBlock,
+          weedExp e inLoop inFuncBlock,
+          weedAssignation incr inLoop inFuncBlock
+        )
+      }
 
 and weedClause cl inLoop inFuncBlock =
+  (* t: string option containing None at that point *)
+  let t = cl.theType;
+  match cl.options with
+    | OptionSw (el, sl) -> (* el: exp list, sl: statement list *)
+      { theType=t;
+        options=OptionSw (
+            map (fun x -> weedExp x inLoop inFuncBlock) el,
+            map (fun x -> weedStatement x inLoop inFuncBlock) sl
+          )
+      }
+    (* sl: statement list *)
+    | DefaultSw sl ->
+      { theType=t;
+        options=DefaultSw (
+            map (fun x -> weedStatement x inLoop inFuncBlock) sl
+          )
+      }
 
 and weedAssignation assig inLoop inFuncBlock =
+  (* t: string option containing None at that point *)
+  let t = assig.theType;
+  match assig.options with
+    | Assign (al, el) -> (* al: assignee list, el: exp list *)
+      if length al == length el then
+        { theType=t;
+          options = Assign (
+            map (fun x -> weedAssignee x inLoop inFuncBlock) al,
+            map (fun x -> weedExp x inLoop inFuncBlock) el
+            )
+        }
+      else raise WeederSyntax "variable(s) and expression(s) not one-to-one"
+    (* al: assignee list, el: exp list *)
+    | DeclAssign (al, el) ->
+      if length al == length el then
+        { theType=t;
+          options = DeclAssign (
+            map (fun x -> weedAssignee x inLoop inFuncBlock) al,
+            map (fun x -> weedExp x inLoop inFuncBlock) el
+            )
+        }
+      else raise WeederSyntax "variable(s) and expression(s) not one-to-one"
 
+    (* a: assignee, s: string (the operator), e: exp *)
+    | OpAssign (a, s, e) ->
+      { theType=t;
+        options=OpAssign (
+          weedAssignee a,
+          s,
+          weedExp e
+          )
+      }
+    (* a: assignee, s: string (the operator) *)
+    | Increment (a, s) ->
+      { theType=t;
+        options=Increment (weedAssignee a, s)
+      }
 and weedAssignee assig inLoop inFuncBlock =
-
+  (* t: string option containing None at that point *)
+  let t = assig.theType;
+  match assig.options with
+    | Object of e -> (* e: exp (assignable)*)
+      { theType=t,
+        options=match e.options with
+          | ExpId _ ->
+            weedExp e inLoop inFuncBlock
+          | ArrayElem _ ->
+            weedExp e inLoop inFuncBlock
+          | ObjectField _ ->
+            weedExp e inLoop inFuncBlock
+          | _ -> raise WeederSyntax "cannot assign to expression"
+      }
 and weedExp ex inLoop inFuncBlock =
 
 and weedOptionalExp ex inLoop inFuncBlock =

@@ -80,7 +80,6 @@ and assignationOptions =
   | OpAssign of assignee * string * exp
   | Increment of assignee * string
 and assigneeOptions =
-  | Variable of string
   | Object of exp (* expect an assignable object *)
 and expOptions =
   | FloatConst of string

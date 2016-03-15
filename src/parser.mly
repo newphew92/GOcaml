@@ -64,7 +64,6 @@
 %left MINUS PLUS
 %left STAR SLASH
 %nonassoc LBRACKET
-%nonassoc THEN
 %nonassoc ELSE
 %nonassoc BEFORE
 (* Nodes type *)
@@ -154,8 +153,7 @@ assign:
   | incDec { $1 }
 
 assignee:
-  | ID { Variable $1 }
-  | primary LSQPAR exp RSQPAR { { theType=None; options=Object (ArrayElem $1 $3) } } (* TYPECHECKER WILL NEED TO GET SURE THIS IS AN ID *)
+  | primary { { theType=None; options=Object $1 } } (* TYPECHECKER WILL NEED TO GET SURE THIS IS AN ID *)
 
 assignee_list:
   | { [] }
@@ -188,14 +186,14 @@ unary:
 
 primary:
   | LPAR exp RPAR {$2}
-  | ID {$1}
+  | ID { { theType=None; options=ExpId $1 } }
   | constVal {$1}
   | TYPE LPAR exp RPAR {TypeCast $1 $3} (*typecast*)
   | FUNC LPAR id_list_with_types RPAR option(typeG) block { { theType=None; options=Lambda $3 $4 $5 } } (* Function literal *)
   | primary LSQPAR exp RSQPAR { { theType=None; options=ArrayElem $1 $3 } } (* index element *)
   | primary LSQPAR option(exp) COLON option(exp) RSQPAR { {theType=None; options=ArraySlice $1 $3 $5 } } (* slices *)
   | primary LPAR exp_list RPAR { { theType=None; options=FunctionCall $1 $3 } } (* function call *)
-  | ID DOT ID { { theType=None; options=ObjectField $1 $3 } } (* package.field *)
+  | ID DOT ID { { theType=None; options=ObjectField $1 $3 } } (* package.field or struct.field *)
 
 id_list:
   | { [] }
