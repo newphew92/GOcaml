@@ -286,11 +286,12 @@ non_empty_exp_list:
   | exp COMMA non_empty_exp_list { $1 :: $3 }
 
 ifStat:
-  | IF exp block option(elseStat) {{ theType=None; options=IfS None $3 $4} }
-  | IF exp SEMICOLON exp block option(elseStat) {{ theType=None; options=IfS (Some (ExpS $2)) $3 $4} }
-  | IF assign SEMICOLON exp block option(elseStat) {{ theType=None; options=IfS (Some (AssignS $2)) $3 $4} }
+  | IF exp block elseStat {{ theType=None; options=IfS None $3 $4} }
+  | IF exp SEMICOLON exp block elseStat {{ theType=None; options=IfS (Some (ExpS $2)) $3 $4} }
+  | IF assign SEMICOLON exp block elseStat {{ theType=None; options=IfS (Some (AssignS $2)) $3 $4} }
 
 elseStat:
+  | { [] }
   | ELSE ifStat { [$2] }
   | ELSE block SEMICOLON { $2 }
 

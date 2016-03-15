@@ -47,7 +47,7 @@ and statementOptions =
   | ContinueS
   | DeclareS of dec
   | ForS of loopStat
-  | IfS of statement option * exp * statement list * (statement list) option (* else if is contained in second block *)
+  | IfS of statement option * exp * statement list * statement list (* else if is contained in second block *)
   | PrintS of exp list
   | PrintlnS of exp list
   | ReturnS of exp option
