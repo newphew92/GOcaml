@@ -1,3 +1,12 @@
+(*
+Weeding:
+1) ContinueS and BreakS must be nested in a loop
+2) A function declaration cannot be nested in another function
+3) ReturnS must be in function (not necessary, but safety check)
+4) check on one line declarations, variables and expressions are one-to-one
+5) filter tokens to which an assignation is possible
+*)
+
 open List
 
 exception WeederSyntax of string
@@ -43,10 +52,11 @@ and weedStatement stat inLoop inFuncBlock =
         options=PrintlnS (map (fun x -> (weedExp x inLoop inFuncBlock) ) el)
       }
     (* eo: exp option *)
-    | ReturnS eo ->
+    | ReturnS eo -> if not inFuncBlock then
       { theType=t;
         options = ReturnS (weedOptionalDec eo inLoop inFuncBlock)
       }
+      else raise WeederSyntax "return outside function"
     (* so: statement option, eo: exp option, cl: clause list *)
     | SwitchS (so, eo, cl) ->
       { theType=t;
