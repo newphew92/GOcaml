@@ -5,13 +5,90 @@ Weeding:
 3) ReturnS must be in function (not necessary, but safety check)
 4) check on one line declarations, variables and expressions are one-to-one
 5) filter tokens to which an assignation is possible
+6) Dealias types, all DeclaredType token will be replaced by the built-in type
 *)
 
 open List
 
 exception WeederSyntax of string
 
+(*
+  TYPE ALIAS HELPERS
+*)
+
+let flattenAliasList renamings =
+(*
+Flatten a list of (string * typeCall) to a (string * typeCallOptions)
+*)
+  match renamings with
+  | (alias, typeO)::tl -> append (alias, typeO.options) (readAliasList tl)
+  | [] -> []
+in
+let rec listTypeAlias decList =
+(*
+Traverse a dec list and return (string * typeCallOptions) list
+read elements as (alias * built-in type)
+*)
+  match decList with
+  | hd::tl ->
+    let aliasList =
+      match hd.options with
+        | TypeD d ->
+          match d.options with
+            | Simple renamings ->
+              append (readAliasList renamings) (flattenTypeAlias tl)
+            | _ -> listTypeAlias tl
+        | _ -> listTypeAlias tl
+      in return (append aliasList (listTypeAlias tl))
+  | [] -> []
+
+let isNewType al aliasStack =
+(*
+Check a string is not in a list of already seen type names
+*)
+  match aliasStack with
+    | [] -> true
+    | hd::tl ->
+      if (compare al hd) == 0 then
+        false
+      else
+       isNewType al tl
+
+let rec searchAliasType alias aliastList aliasStack =
+(*
+string -> (string, typeCallOptions) list -> typeCallOptions
+Return the type (as typeCallOptions) of an alias (as string) from the list
+*)
+  match aliastList with
+    | (al, tc)::tl ->
+      if (compare alias al) == 0 then
+        if (isNewType al aliasStack) then
+          tc
+        else
+          raise WeederSyntax (concat "" ("Recursively declared type alias "::[alias]))
+      else
+        searchAliasType tl
+    | [] -> raise WeederSyntax (concat "" ("undeclared type alias "::[alias]))
+in
+let getAliasType alias aliasList = recGetAliasType alias aliasList []
+(*
+Recursively use searchAliasType to find the nested built-in type of an alias
+*)
+and rec recGetAliasType alias aliasList stack =
+  match (searchAliasType alias aliasList stack) with
+    | DeclaredType a ->
+      let stack = a::stack in
+      recGetAliasType a aliasList stack
+    | builtIn -> builtIn
+
+
+
+(*
+  RECURSIVE WEEDING
+*)
+
 let rec weedAst ast =
+  let aliasList = ref listTypeAlias ast.declarations
   return {
     package=ast.package;
     declarations= map (fun x -> (weedDec x false false) ) ast.declarations
@@ -321,6 +398,14 @@ and weedTypeCall tc inLoop inFuncBlock =
     options=match tc.options with
       | ArrayType ind -> (* ind: exp *)
         ArrayType (weedExp ind inLoop inFuncBlock)
+      (* t: string *)
+      | DeclaredType t ->
+        match (getAliasType t !aliasList) with
+         | BuiltInType s -> BuiltInType s
+         | SliceType -> SliceType
+         | ArrayType e -> ArrayType (weedExp e inLoop inFuncBlock)
+         | DeclaredType s ->
+            raise WeederSyntax (concat "" "critical error: declared type "::[s])
   }
 and weedOptionaltypeCall tc inLoop inFuncBlock =
   match tc with
