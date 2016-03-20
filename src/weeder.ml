@@ -88,7 +88,7 @@ and rec recGetAliasType alias aliasList stack =
 *)
 
 let rec weedAst ast =
-  let aliasList = ref listTypeAlias ast.declarations
+  let aliasList = ref (listTypeAlias ast.declarations)
   return {
     package=ast.package;
     declarations= map (fun x -> (weedDec x false false) ) ast.declarations
