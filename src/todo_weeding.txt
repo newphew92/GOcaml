@@ -4,3 +4,7 @@ traverse AST to check:
 2) RETURN are in Functions (might be unnecessary)
 3) No FUNC declaration token is nested in a function
 4) Forbid unused expressions?
+
+Icebox:
+
+1) check we can do things such as some_struct.some_field = 1

@@ -47,7 +47,7 @@ and statementOptions =
   | ContinueS
   | DeclareS of dec
   | ForS of loopStat
-  | IfS of statement option * exp * statement list * (statement list) option (* else if is contained in second block *)
+  | IfS of statement option * exp * statement list * statement list (* else if is contained in second block *)
   | PrintS of exp list
   | PrintlnS of exp list
   | ReturnS of exp option
@@ -61,11 +61,9 @@ and decOptions =
   | VarsDandAssign of string list * typeCall option * exp list
   | TypeD of typeDec
 and structFieldDecOptions =
-  | FieldsBunch of string list * string
-  | ListFieldsBunch of string list * exp * string
-  | Field of string
+  | FieldsBunch of string list * typeCall
 and typeDecOptions =
-  | Simple of (string * string) list
+  | Simple of (string * typeCall) list
   | StructD of string * structFieldDec list
 and loopStatOptions =
   | InfLoop of statement list
@@ -80,7 +78,6 @@ and assignationOptions =
   | OpAssign of assignee * string * exp
   | Increment of assignee * string
 and assigneeOptions =
-  | Variable of string
   | Object of exp (* expect an assignable object *)
 and expOptions =
   | FloatConst of string
