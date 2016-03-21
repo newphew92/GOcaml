@@ -56,7 +56,7 @@ and statementOptions =
   | AssignS of assignation
 and decOptions =
   | ListedVarD of dec list
-  | FunctionD of string * (string * string option) list * typeCall option * statement list
+  | FunctionD of string * (string * typeCall option) list * typeCall option * statement list
   | VarsD of string list * typeCall
   | VarsDandAssign of string list * typeCall option * exp list
   | TypeD of typeDec
