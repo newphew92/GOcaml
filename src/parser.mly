@@ -88,7 +88,7 @@ typeDec:
 structType:
   | STRUCT LCURL list(fieldDec) RCURL { $3 }
 fieldDec:
-  | id_list typeG SEMICOLON { { theType=None; options=FieldsBunch ($1, $2) } }
+  | non_empty_id_list typeG SEMICOLON { { theType=None; options=FieldsBunch ($1, $2) } }
 
 block:
   | LCURL stat_list RCURL {$2}
@@ -103,8 +103,8 @@ stat_list:
 
 typeG: (*basic types*)
   | TYPE { { theType=None; options=BuiltInType $1 } }
-  | LSQPAR RSQPAR { { theType=None; options=SliceType } } (*slice*)
-  | LSQPAR exp RSQPAR { { theType=None; options=ArrayType $2 } } (*array*)
+  | LSQPAR RSQPAR typeG { { theType=None; options=SliceType } } (*slice*)
+  | LSQPAR exp RSQPAR typeG { { theType=None; options=ArrayType $2 } } (*array*)
   | ID { { theType=None; options=DeclaredType $1 } }
 
 stat:

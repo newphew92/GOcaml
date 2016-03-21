@@ -100,5 +100,5 @@ and expOptions =
 and typeCallOptions =
   | BuiltInType of string
   | DeclaredType of string
-  | SliceType
-  | ArrayType of exp
+  | SliceType of typeCall
+  | ArrayType of exp * typeCall
