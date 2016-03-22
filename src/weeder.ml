@@ -109,7 +109,7 @@ and hasNoDefault clauses =
 *)
 
 let rec weedAst ast:ast =
-  let aliasList := (listTypeAlias ast.declarations)
+  aliasList := (listTypeAlias ast.declarations);
   {
     package=ast.package;
     declarations= List.map (fun x -> (weedDec x false false) ) ast.declarations

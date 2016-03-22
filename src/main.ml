@@ -12,10 +12,10 @@ let () =
 
 (* open the file and pass to the parser *)
 
-(* parser returns an ast, pass it to weeder *)
+(* parser returns an ast, pass it to weeder (Weeder.weedAst) *)
 
-(* the parser returns another ast pass it to typechecker *)
+(* the weeder returns another ast pass it to typechecker *)
 
 (* the typechecker returns a typed ast, pass it to prettyPrint *)
 
-(* prettyPrint returns a string, print it or save it to file *)
+(* prettyPrint (PretttPrint.prettyPrint) returns a string, print it or save it to file *)
