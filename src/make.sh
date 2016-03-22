@@ -16,4 +16,4 @@ echo -e "\e[1m\e[33m- OCamllex : lex.mll -> lex.ml\e[0m"
 ocamllex lex.mll
 
 echo -e "\e[1m\e[33m- OCamlBuild -> main.ml\e[0m"
-ocamlbuild -no-hygiene ast.ml parser.ml lex.ml weeder.ml prettyPrint.ml main.native
+ocamlbuild -no-hygiene main.native

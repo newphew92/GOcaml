@@ -5,8 +5,10 @@
 /home/olivier/.opam/4.02.3/bin/ocamldep.opt -modules parser.mli > parser.mli.depends # cached
 # Target: prettyPrint.ml.depends, tags: { extension:ml, file:prettyPrint.ml, ocaml, ocamldep, quiet }
 /home/olivier/.opam/4.02.3/bin/ocamldep.opt -modules prettyPrint.ml > prettyPrint.ml.depends
-+ /home/olivier/.opam/4.02.3/bin/ocamldep.opt -modules prettyPrint.ml > prettyPrint.ml.depends
-File "prettyPrint.ml", line 253, characters 0-0:
+# Target: weeder.ml.depends, tags: { extension:ml, file:weeder.ml, ocaml, ocamldep, quiet }
+/home/olivier/.opam/4.02.3/bin/ocamldep.opt -modules weeder.ml > weeder.ml.depends
++ /home/olivier/.opam/4.02.3/bin/ocamldep.opt -modules weeder.ml > weeder.ml.depends
+File "weeder.ml", line 445, characters 0-0:
 Error: Syntax error
 Command exited with code 2.
 # Compilation unsuccessful.

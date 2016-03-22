@@ -428,7 +428,7 @@ and weedTypeCall (tc:typeCall) inLoop inFuncBlock =
          SliceType (weedTypeCall elementsType)
       (* t: string *)
       | DeclaredType t ->
-        match (getAliasType t !aliasList) with
+        (match (getAliasType t !aliasList) with
          | BuiltInType s -> BuiltInType s
          | SliceType elementsType ->
             SliceType (weedTypeCall elementsType)
@@ -436,6 +436,7 @@ and weedTypeCall (tc:typeCall) inLoop inFuncBlock =
             ArrayType (weedExp e inLoop inFuncBlock, weedTypeCall elementsType)
          | DeclaredType s ->
             raise (WeederSyntax (concat "" ("critical error: declared type "::[s])))
+        )
   }
 and weedOptionaltypeCall tc inLoop inFuncBlock =
   match tc with

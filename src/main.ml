@@ -1,7 +1,7 @@
 open Printf
+open Ast
 open Lexing
 open Parser
-open Ast
 open Weeder
 open PrettyPrint
 
@@ -11,19 +11,12 @@ let () =
     printf "[%i] %s\n" i Sys.argv.(i)
   done;;
 
+(* open the file and pass to the parser *)
 
-(*
-let filename = Sys.argv.(1)
+(* parser returns an ast, pass it to weeder *)
 
-let () =
-    let inBuffer = open_in filename in
-    let lineBuffer = Lexing.from_channel inBuffer in
-    try
-        let acceptance = Parser.prog Lexer.prog lineBuffer in
-        match acceptance with
-            | true -> print_string "Accepted!\n"
-            | false -> print_string "Not accepted!\n"
-    with
-        | Lexer.Error msg -> Printf.fprintf stderr "%s%!\n" msg
-        | Parser.Error -> Printf.fprintf stderr "At offset %d: syntax error.\n%!" (Lexing.lexeme_start lineBuffer)
-*)
+(* the parser returns another ast pass it to typechecker *)
+
+(* the typechecker returns a typed ast, pass it to prettyPrint *)
+
+(* prettyPrint returns a string, print it or save it to file *)

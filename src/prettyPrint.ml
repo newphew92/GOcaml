@@ -4,14 +4,13 @@ open String
 exception PrettyPrintError of string
 
 (* INDENTATION HELPER *)
-let indent = ref [];;
+let indent = ref []
 let increaseIndent () = indent := "\t"::(!indent)
-and decreaseIndent () =
+let decreaseIndent () =
   match !indent with
     | hd::tl -> indent := tl
     | _ -> raise (PrettyPrintError "cannot decrease empty indentation")
-and printIndent () = concat " " !indent
-in
+let printIndent () = concat " " !indent
 (* PRETTY PRINTER *)
 
 let rec pprintProg ast =
@@ -48,16 +47,30 @@ and pprintDec (decl:dec) =
     (* TypeD of typeDec *)
     | TypeD td -> "type"::(pprintTypeDec td) @ [";\n"]
 
-and pprintArgs (args: (string * typeCall option) list) =
-  match args with
-    | (var, opType)::[] -> var::(pprintOptionalTypeCall opType) (* (var, [type]): (string, Some typeCall) *)
-    | (var, opType)::tl -> var::(pprintOptionalTypeCall opType)@[","]@(pprintArgs tl)
+and pprintTypeDec (typeDec:typeDec) =
+  match typeDec.options with
+    | Simple strAndTypeList ->
+      "("::(pprintTypeAliasList strAndTypeList) @ [")"]
+    | StructD (name, fieldsList) ->
+      name::"struct {\n"::(pprintStructFieldDecList fieldsList) @ ["}\n"]
+
+and pprintOptionalExp (expOp: exp option) =
+  match expOp with
+    | None -> []
+    | Some e -> pprintExp e
+
+and pprintSeparatedExpList exps separator =
+  match exps with
+    | hd::[] -> pprintExp hd
+    | hd::tl ->
+      (pprintExp hd) @
+      [separator] @ (pprintSeparatedExpList tl separator)
     | [] -> []
 
 and pprintIndentedStatList statList =
   increaseIndent();
   let s = pprintStatList statList in
-  let () = decreaseIndent();
+  let () = decreaseIndent() in
   s
 
 and pprintStatList (statList: statement list) =
@@ -82,12 +95,67 @@ and pprintInlineStat (stat:statement) =
     | DeclareS dc -> (pprintDec dc)
     | ForS loop -> (pprintFor loop)
     | IfS (s, cond, ifStat, elseStat) -> (pprintIf stat)
-    | PrintS e -> "print(" :: (pprintExp e) @ [")\n"]
-    | PrintlnS e -> "println(" :: (pprintExp e) @ [")\n"]
-    | ReturnS e -> "return"::(pprintExp e) @ ["\n"]
+    | PrintS e -> "print(" :: (pprintSeparatedExpList e ", ") @ [")\n"]
+    | PrintlnS e -> "println(" :: (pprintSeparatedExpList e ", ") @ [")\n"]
+    | ReturnS e -> "return"::(pprintOptionalExp e) @ ["\n"]
     | SwitchS (s, exp, clauses) -> pprintSwitch stat
     | ExpS e -> pprintExp e
     | AssignS a -> pprintAssignation a
+
+and pprintExp (exp:exp) =
+  match exp.options with
+    | FloatConst s -> [s]
+    | IntConst s -> [s]
+    | OctConst s -> [s]
+    | HexaConst s -> [s]
+    | BoolConst s -> [s]
+    | StringConst s -> [s]
+    | RawStringConst s -> [s]
+    | RuneConst s -> [s]
+    | ExpId s -> [s]
+    | BinaryOp (e1, op, e2) ->
+      (pprintExp e1) @ [op] @ (pprintExp e2)
+    | UnaryOp (op, e) ->
+      op::(pprintExp e)
+    | ArrayElem (e, indice) ->
+      (pprintExp e) @ ["["] @ (pprintExp indice) @ ["]"]
+    | ArraySlice (exp, fstIndOp, sndIndOp) ->
+      (pprintExp exp) @ ["["] @
+      (pprintOptionalExp fstIndOp) @
+      [":"] @ (pprintOptionalExp sndIndOp) @ ["]"]
+    | ObjectField (objExp, field) ->
+      (pprintExp objExp) @ ["."] @ [field]
+    (* FunctionCall of exp * exp list *)
+    | FunctionCall (func, args) ->
+      (pprintExp func) @ ["("] @ (pprintSeparatedExpList args ",") @ [")"]
+    (* Lambda of (string * typeCall option) list * typeCall option * statement list *)
+    | Lambda (args, opFuncType, statList) ->
+      "("::(pprintArgs args) @ [")"] @
+      (pprintOptionalTypeCall opFuncType) @
+      ["{\n"] @ (pprintIndentedStatList statList) @
+      ["}"]
+    | TypeCast (toType, exp) -> (pprintTypeCall toType) @ (pprintExp exp)
+
+
+and pprintOptionalTypeCall (opType: typeCall option) =
+  match opType with
+    | None -> []
+    | Some typeC -> pprintTypeCall typeC
+
+and pprintTypeCall (typeC: typeCall) =
+  match typeC.options with
+    (* BuiltInType and DeclaredType contain a string *)
+    | BuiltInType t -> [t]
+    | DeclaredType t -> [t]
+    | SliceType elementsType -> "[]"::(pprintTypeCall elementsType)
+    | ArrayType (length, elementsType) ->
+      "["::(pprintExp length) @ ["]"]@(pprintTypeCall elementsType)
+
+and pprintArgs (args: (string * typeCall option) list) =
+  match args with
+    | (var, opType)::[] -> var::(pprintOptionalTypeCall opType) (* (var, [type]): (string, Some typeCall) *)
+    | (var, opType)::tl -> var::(pprintOptionalTypeCall opType)@[","]@(pprintArgs tl)
+    | [] -> []
 
 and pprintFor (forS:loopStat) =
   match forS.options with
@@ -131,33 +199,12 @@ and pprintClause (clause:clause) =
     | DefaultSw statList ->
       "default:\n"::(pprintIndentedStatList statList)
 
-and pprintOptionalTypeCall (opType: typeCall option) =
-  match opType with
-    | None -> []
-    | Some typeC -> pprintTypeCall typeC
-
-and pprintTypeCall (typeC: typeCall) =
-  match typeC.options with
-    (* BuiltInType and DeclaredType contain a string *)
-    | BuiltInType t -> [t]
-    | DeclaredType t -> [t]
-    | SliceType elementsType -> "[]"::(pprintTypeCall elementsType)
-    | ArrayType (length, elementsType) ->
-      "["::(pprintExp length) @ ["]"]@(pprintTypeCall elementsType)
-
 and pprintTypeAliasList aliasList =
   match aliasList with
     | (alias, typeC)::tl ->
       alias::(pprintTypeCall typeC) @ [";"] @
       pprintTypeAliasList tl
     | [] -> []
-
-and pprintTypeDec (typeDec:typeDec) =
-  match typeDec.options with
-    | Simple strAndTypeList ->
-      "("::(pprintTypeAliasList strAndTypeList) @ [")"]
-    | StructD (name, fieldsList) ->
-      name::"struct {\n"::(pprintStructFieldDecList fieldsList) @ ["}\n"]
 
 and pprintStructFieldDecList fieldList =
   match fieldList with
@@ -176,7 +223,7 @@ and pprintAssignation (assign:assignation) =
       (pprintSeparatedAssigneeList assignees ",") @
       ["="] @ (pprintSeparatedExpList expList ",") @ [";\n"]
     | DeclAssign (assigneeList, expList) ->
-      (pprintSeparatedAssigneeList assignees ",") @
+      (pprintSeparatedAssigneeList assigneeList ",") @
       [":="] @ (pprintSeparatedExpList expList ",") @ [";\n"]
     | OpAssign (assignee, operator, exp) ->
       (pprintAssignee assignee)::operator::(pprintExp exp) @ [";\n"]
@@ -189,64 +236,15 @@ and pprintAssignee (assignee:assignee) =
 
 and pprintSeparatedAssigneeList (assignees:assignee list) separator =
   match assignees with
-    | hd::[] -> pprintAssignee hd
+    | hd::[] -> (pprintAssignee hd)
     | hd::tl ->
       (pprintAssignee hd) @ [separator] @
-      pprintSeparatedAssigneeList tl separator
+      (pprintSeparatedAssigneeList tl separator)
     | [] -> []
 
-and pprintOptionalExp (expOp: exp option) =
-  match expOp with
-    | None -> []
-    | Some e -> pprintExp e
-
-and pprintSeparatedExpList exps separator =
-  match exps with
-    | hd::[] -> pprintExp hd
-    | hd::tl ->
-      (pprintExp hd) @
-      [separator] @ (pprintSeparatedExpList tl separator)
-    | [] -> []
-
-and pprintExp exp =
-  match exp with
-    | FloatConst s -> [s]
-    | IntConst s -> [s]
-    | OctConst s -> [s]
-    | HexaConst s -> [s]
-    | BoolConst s -> [s]
-    | StringConst s -> [s]
-    | RawStringConst s -> [s]
-    | RuneConst s -> [s]
-    | ExpId s -> [s]
-    | BinaryOp (e1, op, e2) ->
-      (pprintExp e1) @ [op] @ (pprintExp e2)
-    | UnaryOp (op, e) ->
-      op::(pprintExp e)
-    | ArrayElem (e, indice) ->
-      (pprintExp e) @ ["["] @ (pprintExp indice) @ ["]"]
-    | ArraySlice (exp, fstIndOp, sndIndOp) ->
-      (pprintExp exp) @ ["["] @
-      (pprintOptionalExp fstIndOp) @
-      [":"] @ (pprintOptionalExp sndIndOp) @ ["]"]
-    | ObjectField (objExp, field) ->
-      (pprintExp objExp) @ ["."] @ [field]
-    (* FunctionCall of exp * exp list *)
-    | FunctionCall (func, args) ->
-      (pprintExp) @ ["("] @ (pprintSeparatedExpList args ",") @ [")"]
-    (* Lambda of (string * typeCall option) list * typeCall option * statement list *)
-    | Lambda (args, opFuncType, statList) ->
-      "("::(pprintArgs args) @ [")"] @
-      (pprintOptionalTypeCall opFuncType) @
-      ["{\n"] @ (pprintIndentedStatList statList) @
-      ["}"]
-    | TypeCast (toType, exp) -> (pprintTypeCall toType) @ (pprintExp exp)
-in
+(* trimming extra characters *)
 let replace input output =
     Str.global_replace (Str.regexp_string input) output
-in
+
 let prettyPrint ast =
-  (* trimming extra characters *)
-  let progString = pprintProg ast in
-  let progString = replace "\n " "\n" progString in
-  replace ";;" ";" progString
+  replace ";;" ";" (replace "\n " "\n" (pprintProg ast))
