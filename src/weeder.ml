@@ -381,7 +381,10 @@ and weedExp ex inLoop inFuncBlock =
       (* tp: string (type), e: exp *)
       | TypeCast (tp, e) ->
         TypeCast (
-          tp,
+          (match tp.options with
+            | BuiltInType t -> tp
+            | _ ->
+              raise WeederSyntax "catastrophic: can only cast from built-in"),
           weedExp e inLoop inFuncBlock
           )
       | _ -> ex (* cases: literals or variable name *)

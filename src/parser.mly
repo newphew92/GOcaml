@@ -165,16 +165,15 @@ primary:
   | LPAR exp RPAR {$2}
   | ID { { theType=None; options=ExpId $1 } }
   | constVal {$1}
-  | TYPE LPAR exp RPAR {TypeCast $1 $3} (*typecast*)
+  | type_cast {$1}
   | FUNC LPAR id_list_with_types RPAR option(typeG) block { { theType=None; options=Lambda ($3, $4, $5) } } (* Function literal *)
   | primary LSQPAR exp RSQPAR { { theType=None; options=ArrayElem ($1, $3) } } (* index element *)
   | primary LSQPAR option(exp) COLON option(exp) RSQPAR { {theType=None; options=ArraySlice ($1, $3, $5) } } (* slices *)
   | primary LPAR exp_list RPAR { { theType=None; options=FunctionCall ($1, $3) } } (* function call *)
   | ID DOT ID { { theType=None; options=ObjectField ($1, $3) } } (* package.field or struct.field *)
 
-id_list:
-  | { [] }
-  | non_empty_id_list { $1 }
+type_cast:
+  | TYPE LPAR exp RPAR {TypeCast (BuiltInType $1) $3} (*typecast only with Built-in types*)
 
 non_empty_id_list:
   | ID { [$1] }

@@ -40,8 +40,8 @@ and pprintDec decl =
     (* VarsDandAssign of string list * typeCall option * exp list *)
     | VarsDandAssign (vars, opType, expList) ->
       "var"::(concat ", " vars) @
-      (pprintOptionalTypeCall opType) @
-      (pprintExpList expList) @ [";\n"]
+      (pprintOptionalTypeCall opType) @ ["="] @
+      (pprintSeparatedExpList expList ",") @ [";\n"]
     (* TypeD of typeDec *)
     | TypeD td -> "type"::(pprintTypeDec td) @ [";\n"]
 
@@ -96,16 +96,16 @@ and pprintFor forS =
     | For (assign, cond, incr, statList)
       "for"::(pprintAssignation assign) @ [";"] @
       (pprintExp cond) @ [";"] @
-      (pprintAssignation incr) @ ["{"] @
+      (pprintAssignation incr) @ ["{\n"] @
       (pprintIndentedStatList statList) @ ["}\n"]
 
 and pprintIf ifS =
   match ifS.options with
     | IfS (opStat, cond, ifStats, elseStats) ->
       "if"::(pprintOptionalInlineStat opStat) @
-      pprintExp cond @ ["{"] @
+      pprintExp cond @ ["{\n"] @
       (pprintIndentedStatList ifStats) @ ["}\n"] @
-      ["else {"] @
+      ["else {\n"] @
       (pprintIndentedStatList elseStats) @ ["}\n"]
     | _ -> raise PrettyPrintError "catastrophic error on in if statement"
 
@@ -129,8 +129,6 @@ and pprintClause clause =
     | DefaultSw statList ->
       "default:\n" @ (pprintIndentedStatList statList)
 
-
-
 and pprintOptionalTypeCall opType =
   match opType with
     | None -> []
@@ -138,13 +136,106 @@ and pprintOptionalTypeCall opType =
 
 and pprintTypeCall typeC =
   match typeC.options with
+    (* BuiltInType and DeclaredType contain a string *)
     | BuiltInType t -> [t]
     | DeclaredType t -> [t]
-    | SliceType
+    | SliceType elementsType -> "[]"::(pprintTypeCall elementsType)
+    | ArrayType (length, elementsType) ->
+      "["::(pprintExp length) @ ["]"]@(pprintTypeCall elementsType)
+
+and pprintTypeAliasList aliasList =
+  match aliasList with
+    | (alias, typeC)::tl ->
+      alias::(pprintTypeCall typeC) @ [";"] @
+      pprintTypeAliasList tl
+    | [] -> []
+
+and pprintTypeDec typeDec =
+  match typeDec.options with
+    | Simple strAndTypeList ->
+      "("::(pprintTypeAliasList strAndTypeList) @ [")"]
+    | StructD (name, fieldsList) ->
+      name::"struct {\n"::(pprintStructFieldDecList fieldsList) @ ["}\n"]
+
+and pprintStructFieldDecList fieldList =
+  match fieldList with
+    | hd::tl -> (pprintStructFieldDec hd) @ (pprintStructFieldDecList tl)
+    | [] -> []
+
+and pprintStructFieldDec fields =
+  match fields with
+    (* FieldsBunch of string list * typeCall *)
+    | FieldsBunch (names, typeC) ->
+      (concat ", " names) @ (pprintTypeCall typeC) @ ";\n"
 
 and pprintAssignation assign =
+  match assign.options with
+    | Assign (assignees, expList) ->
+      (pprintSeparatedAssigneeList assignees ",") @
+      ["="] @ (pprintSeparatedExpList expList ",") @ [";\n"]
+    | DeclAssign (assigneeList, expList) ->
+      (pprintSeparatedAssigneeList assignees ",") @
+      [":="] @ (pprintSeparatedExpList expList ",") @ [";\n"]
+    | OpAssign (assignee, operator, exp) ->
+      (pprintAssignee assignee)::operator::(pprintExp exp) @ [";\n"]
+    | Increment (assignee, operator) ->
+      (pprintAssignee assignee) @ [operator] @ [";\n"]
+
+and pprintAssignee assignee =
+  match assignee.options with
+    | Object e -> pprintExp e
+
+and pprintSeparatedAssigneeList assignees separator =
+  match assignees with
+    | hd::[] -> pprintAssignee hd
+    | hd::tl ->
+      (pprintAssignee hd) @ [separator] @
+      pprintSeparatedAssigneeList tl separator
+    | [] -> []
 
 and pprintOptionalExp expOp =
+  match expOp with
+    | None -> []
+    | Some e -> pprintExp e
+
 and pprintSeparatedExpList exp separator =
-and pprintExpList exp =
+  match exp.options with
+    | hd::[] -> pprintExp hd
+    | hd::tl ->
+      (pprintExp hd) @
+      [separator] @ (pprintSeparatedExpList tl separator)
+    | [] -> []
+
 and pprintExp exp =
+  match exp with
+    | FloatConst s -> s
+    | IntConst s -> s
+    | OctConst s -> s
+    | HexaConst s -> s
+    | BoolConst s -> s
+    | StringConst s -> s
+    | RawStringConst s -> s
+    | RuneConst s -> s
+    | ExpId s -> s
+    | BinaryOp (e1, op, e2) ->
+      (pprintExp e1) @ [op] @ (pprintExp e2)
+    | UnaryOp (op, e) ->
+      op::(pprintExp e)
+    | ArrayElem (e, indice) ->
+      (pprintExp e) @ ["["] @ (pprintExp indice) @ ["]"]
+    | ArraySlice (exp, fstIndOp, sndIndOp) ->
+      (pprintExp exp) @ ["["] @
+      (pprintOptionalExp fstIndOp) @
+      [":"] @ (pprintOptionalExp sndIndOp) @ ["]"]
+    | ObjectField (objExp, field) ->
+      (pprintExp objExp) @ ["."] @ [field]
+    (* FunctionCall of exp * exp list *)
+    | FunctionCall (func, args) ->
+      (pprintExp) @ ["("] @ (pprintSeparatedExpList args ",") @ [")"]
+    (* Lambda of (string * typeCall option) list * typeCall option * statement list *)
+    | Lambda (args, opFuncType, statList) ->
+      "("::(pprintArgs args) @ ")" @
+      (pprintOptionalTypeCall opFuncType) @
+      ["{\n"] @ (pprintIndentedStatList statList) @
+      ["}"]
+    | TypeCast (toType, exp) -> (pprintTypeCall toType) @ (pprintExp exp)
