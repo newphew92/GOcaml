@@ -3,8 +3,6 @@
 
 cd /home/olivier/Documents/University/H-16/Compiler/GOcaml/src
 
-rm -f ast.cmi
-rm -f ast.cmo
 rm -f lex.ml
 rm -f parser.ml
 rm -f parser.mli
