@@ -2,6 +2,8 @@ open Printf
 open Lexing
 open Parser
 open Ast
+open Weeder
+open PrettyPrint
 
 
 let () =

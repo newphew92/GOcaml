@@ -1,26 +1,24 @@
 Open String
-Open List
 
 exception PrettyPrintError of string
 
 (* INDENTATION HELPER *)
-let indent = ref [];
-let increaseIndent () =
-  let indent = ref "\t"::(!indent);
-  ()
+let indent = ref []
+let increaseIndent () = indent := "\t"::(!indent);
 let decreaseIndent () =
   match !indent with
-    | hd::tl -> let indent = ref tl; ()
-    | _ -> raise PrettyPrintError "cannot decrease empty indentation"
-let printIndent () = concat " " !indent
+    | hd::tl -> indent := ref tl
+    | _ -> raise (PrettyPrintError "cannot decrease empty indentation")
+  ;
+let printIndent () = concat " " !indent;
 
 (* PRETTY PRINTER *)
 
-let pprintProg ast =
+let rec pprintProg ast =
   concat "" (pprintPackage ast.package) @ (pprintDecList ast.declarations)
 
 (* decList: dec list *)
-let rec pprintDecList decList =
+and pprintDecList decList =
   match decList with
     | hd::tl -> (pprintDec hd)@(pprintDecList tl)
     | [] -> []

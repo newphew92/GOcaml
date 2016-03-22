@@ -6,3 +6,4 @@ src/_build
 !src/prettyPrint.ml
 !src/weeder.ml
 !src/main.ml
+!src/ast.ml

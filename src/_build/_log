@@ -1,2 +1,12 @@
 ### Starting build.
+# Target: main.ml.depends, tags: { extension:ml, file:main.ml, ocaml, ocamldep, quiet }
+/home/olivier/.opam/4.02.3/bin/ocamldep.opt -modules main.ml > main.ml.depends # cached
+# Target: parser.mli.depends, tags: { extension:mli, file:parser.mli, ocaml, ocamldep, quiet }
+/home/olivier/.opam/4.02.3/bin/ocamldep.opt -modules parser.mli > parser.mli.depends # cached
+# Target: prettyPrint.ml.depends, tags: { extension:ml, file:prettyPrint.ml, ocaml, ocamldep, quiet }
+/home/olivier/.opam/4.02.3/bin/ocamldep.opt -modules prettyPrint.ml > prettyPrint.ml.depends
++ /home/olivier/.opam/4.02.3/bin/ocamldep.opt -modules prettyPrint.ml > prettyPrint.ml.depends
+File "prettyPrint.ml", line 32, characters 21-25:
+Error: Syntax error
+Command exited with code 2.
 # Compilation unsuccessful.
