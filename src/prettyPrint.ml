@@ -1,21 +1,26 @@
-Open String
+open Ast
+open String
 
 exception PrettyPrintError of string
 
 (* INDENTATION HELPER *)
-let indent = ref []
-let increaseIndent () = indent := "\t"::(!indent);
-let decreaseIndent () =
+let indent = ref [];;
+let increaseIndent () = indent := "\t"::(!indent)
+and decreaseIndent () =
   match !indent with
-    | hd::tl -> indent := ref tl
+    | hd::tl -> indent := tl
     | _ -> raise (PrettyPrintError "cannot decrease empty indentation")
-  ;
-let printIndent () = concat " " !indent;
-
+and printIndent () = concat " " !indent
+in
 (* PRETTY PRINTER *)
 
 let rec pprintProg ast =
-  concat "" (pprintPackage ast.package) @ (pprintDecList ast.declarations)
+  concat "" ((pprintPackage ast.package) @ (pprintDecList ast.declarations))
+
+and pprintPackage pack =
+  match pack with
+    | Some p -> "package"::p::[";"]
+    | None -> []
 
 (* decList: dec list *)
 and pprintDecList decList =
@@ -29,31 +34,30 @@ and pprintDec decl =
     | ListedVarD dl -> pprintDecList dl (* dl: dec list *)
     (* name: string, args: (string * typeCall option) list,
     fnType: typeCall option, statList: statement list *)
-    | FunctionD name args fnType statList ->
+    | FunctionD (name, args, fnType, statList) ->
         ["func"; name; "("] @ (pprintArgs args) @ [")"] @
         pprintOptionalTypeCall fnType @
         ["{\n"] @ (pprintIndentedStatList statList) @ ["}\n"]
     (* vars: string list, tc: typeCall *)
-    | VarsD (vars, tc) -> "var"::tc @ (pprintTypeCall tc) @ [";\n"]
+    | VarsD (vars, tc) -> "var"::[concat ", " vars]@(pprintTypeCall tc) @ [";\n"]
     (* VarsDandAssign of string list * typeCall option * exp list *)
     | VarsDandAssign (vars, opType, expList) ->
-      "var"::(concat ", " vars) @
+      "var"::(concat ", " vars) ::
       (pprintOptionalTypeCall opType) @ ["="] @
       (pprintSeparatedExpList expList ",") @ [";\n"]
     (* TypeD of typeDec *)
     | TypeD td -> "type"::(pprintTypeDec td) @ [";\n"]
 
 and pprintArgs args =
-  match args with ->
-    (* (var, [type]): (string, Some typeCall) *)
-    | (var, opType)::[] -> var::(pprintOptionalTypeCall opType)@(pprintArgs tl)
+  match args with
+    | (var, opType)::[] -> var::(pprintOptionalTypeCall opType) (* (var, [type]): (string, Some typeCall) *)
     | (var, opType)::tl -> var::(pprintOptionalTypeCall opType)@[","]@(pprintArgs tl)
     | [] -> []
 
 and pprintIndentedStatList statList =
   increaseIndent();
-  let s = pprintStatList statList;
-  decreaseIndent();
+  let s = pprintStatList statList in
+  let () = decreaseIndent();
   s
 
 and pprintStatList statList =
@@ -89,9 +93,9 @@ and pprintFor forS =
   match forS.options with
     | InfLoop statList ->
       "for"::"{\n"::(pprintIndentedStatList statList) @ ["}\n"]
-    | While (cond, statList)
+    | While (cond, statList) ->
       "for"::(pprintExp cond) @ ("{\n"::(pprintIndentedStatList statList) @ ["}\n"])
-    | For (assign, cond, incr, statList)
+    | For (assign, cond, incr, statList) ->
       "for"::(pprintAssignation assign) @ [";"] @
       (pprintExp cond) @ [";"] @
       (pprintAssignation incr) @ ["{\n"] @
@@ -122,10 +126,10 @@ and pprintClauseList clauses =
 and pprintClause clause =
   match clause.options with
     | OptionSw (condList, statList) ->
-      "case" (pprintSeparatedExpList condList ",") @ ["\n"] @
+      "case"::(pprintSeparatedExpList condList ",") @ ["\n"] @
       (pprintIndentedStatList statList)
     | DefaultSw statList ->
-      "default:\n" @ (pprintIndentedStatList statList)
+      "default:\n"::(pprintIndentedStatList statList)
 
 and pprintOptionalTypeCall opType =
   match opType with
@@ -164,7 +168,7 @@ and pprintStructFieldDec fields =
   match fields with
     (* FieldsBunch of string list * typeCall *)
     | FieldsBunch (names, typeC) ->
-      (concat ", " names) @ (pprintTypeCall typeC) @ ";\n"
+      (concat ", " names) @ (pprintTypeCall typeC) @ [";\n"]
 
 and pprintAssignation assign =
   match assign.options with
@@ -196,8 +200,8 @@ and pprintOptionalExp expOp =
     | None -> []
     | Some e -> pprintExp e
 
-and pprintSeparatedExpList exp separator =
-  match exp.options with
+and pprintSeparatedExpList exps separator =
+  match exps with
     | hd::[] -> pprintExp hd
     | hd::tl ->
       (pprintExp hd) @
@@ -206,15 +210,15 @@ and pprintSeparatedExpList exp separator =
 
 and pprintExp exp =
   match exp with
-    | FloatConst s -> s
-    | IntConst s -> s
-    | OctConst s -> s
-    | HexaConst s -> s
-    | BoolConst s -> s
-    | StringConst s -> s
-    | RawStringConst s -> s
-    | RuneConst s -> s
-    | ExpId s -> s
+    | FloatConst s -> [s]
+    | IntConst s -> [s]
+    | OctConst s -> [s]
+    | HexaConst s -> [s]
+    | BoolConst s -> [s]
+    | StringConst s -> [s]
+    | RawStringConst s -> [s]
+    | RuneConst s -> [s]
+    | ExpId s -> [s]
     | BinaryOp (e1, op, e2) ->
       (pprintExp e1) @ [op] @ (pprintExp e2)
     | UnaryOp (op, e) ->
@@ -232,7 +236,7 @@ and pprintExp exp =
       (pprintExp) @ ["("] @ (pprintSeparatedExpList args ",") @ [")"]
     (* Lambda of (string * typeCall option) list * typeCall option * statement list *)
     | Lambda (args, opFuncType, statList) ->
-      "("::(pprintArgs args) @ ")" @
+      "("::(pprintArgs args) @ [")"] @
       (pprintOptionalTypeCall opFuncType) @
       ["{\n"] @ (pprintIndentedStatList statList) @
       ["}"]
