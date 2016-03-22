@@ -81,7 +81,26 @@ and rec recGetAliasType alias aliasList stack =
       recGetAliasType a aliasList stack
     | builtIn -> builtIn
 
+(*
+  UNIQUE SWITCH DEFAULT HELPERS
+*)
 
+let rec hasUniqueDefault clauses =
+  match clauses with
+    | [] -> true
+    | hd::tl ->
+      ( match hd.options with
+        | DefaultSw _ -> hasNoDefault tl
+        | OptionSw _ -> hasUniqueDefault tl
+      )
+and hasNoDefault clauses =
+  match clauses with
+    | [] -> true
+    | hd::tl ->
+      ( match hd.options with
+          | DefaultSw _ -> raise WeederSyntax "switch has multile default case"
+          | OptionSw _ -> hasNoDefault tl
+      )
 
 (*
   RECURSIVE WEEDING
@@ -136,6 +155,7 @@ and weedStatement stat inLoop inFuncBlock =
       else raise WeederSyntax "return outside function"
     (* so: statement option, eo: exp option, cl: clause list *)
     | SwitchS (so, eo, cl) ->
+      hasUniqueDefault cl;
       { theType=t;
         options=SwitchS (
           weedOptionalStatement so inLoop inFuncBlock,
