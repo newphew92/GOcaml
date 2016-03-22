@@ -221,14 +221,14 @@ and weedDec (declr:dec) inLoop inFuncBlock =
         options=TypeD (weedTypeDec td inLoop inFuncBlock)
       }
 
-and weedOptionalDec declr inLoop inFuncBlock =
+and weedOptionalDec (declr:dec option) inLoop inFuncBlock =
   match declr with
     | None -> None
     | Some d -> Some (weedDec d inLoop inFuncBlock)
 
 and weedStructFieldDec (field:structFieldDec) inLoop inFuncBlock =
   (* t: string option containing None at that point *)
-  let t = declr.theType in
+  let t = field.theType in
   match field.options with
     | FieldsBunch (sl, tc) -> (* sl: string list, tc: typeCall *)
       let x:structFieldDec = { theType=t;

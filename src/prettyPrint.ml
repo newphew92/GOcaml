@@ -15,7 +15,7 @@ in
 (* PRETTY PRINTER *)
 
 let rec pprintProg ast =
-  concat "" ((pprintPackage ast.package) @ (pprintDecList ast.declarations))
+  concat " " ((pprintPackage ast.package) @ (pprintDecList ast.declarations))
 
 and pprintPackage pack =
   match pack with
@@ -29,7 +29,7 @@ and pprintDecList decList =
     | [] -> []
 
 (* decl: dec *)
-and pprintDec decl =
+and pprintDec (decl:dec) =
   match decl.options with
     | ListedVarD dl -> pprintDecList dl (* dl: dec list *)
     (* name: string, args: (string * typeCall option) list,
@@ -48,7 +48,7 @@ and pprintDec decl =
     (* TypeD of typeDec *)
     | TypeD td -> "type"::(pprintTypeDec td) @ [";\n"]
 
-and pprintArgs args =
+and pprintArgs (args: (string * typeCall option) list) =
   match args with
     | (var, opType)::[] -> var::(pprintOptionalTypeCall opType) (* (var, [type]): (string, Some typeCall) *)
     | (var, opType)::tl -> var::(pprintOptionalTypeCall opType)@[","]@(pprintArgs tl)
@@ -114,7 +114,7 @@ and pprintIf (ifS:statement) =
 and pprintSwitch (switchS:statement) =
   match switchS.options with
    | SwitchS (statOp, expOp, clauses) ->
-    "switch"::(pprintOptionalInlineStat opStat) @ pprintOptionalExp @ ["{\n"] @
+    "switch"::(pprintOptionalInlineStat statOp) @ (pprintOptionalExp expOp) @ ["{\n"] @
     (pprintClauseList clauses) @ ["}\n"]
    | _ -> raise (PrettyPrintError "catastrophic error on switch statement")
 
@@ -131,12 +131,12 @@ and pprintClause (clause:clause) =
     | DefaultSw statList ->
       "default:\n"::(pprintIndentedStatList statList)
 
-and pprintOptionalTypeCall opType =
+and pprintOptionalTypeCall (opType: typeCall option) =
   match opType with
     | None -> []
     | Some typeC -> pprintTypeCall typeC
 
-and pprintTypeCall typeC =
+and pprintTypeCall (typeC: typeCall) =
   match typeC.options with
     (* BuiltInType and DeclaredType contain a string *)
     | BuiltInType t -> [t]
@@ -241,3 +241,12 @@ and pprintExp exp =
       ["{\n"] @ (pprintIndentedStatList statList) @
       ["}"]
     | TypeCast (toType, exp) -> (pprintTypeCall toType) @ (pprintExp exp)
+in
+let replace input output =
+    Str.global_replace (Str.regexp_string input) output
+in
+let prettyPrint ast =
+  (* trimming extra characters *)
+  let progString = pprintProg ast in
+  let progString = replace "\n " "\n" progString in
+  replace ";;" ";" progString
