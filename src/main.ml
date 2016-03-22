@@ -2,7 +2,6 @@ open Printf
 open Ast
 open Lexing
 open Parser
-open Weeder
 open PrettyPrint
 
 

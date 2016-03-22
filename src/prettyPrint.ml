@@ -226,7 +226,7 @@ and pprintAssignation (assign:assignation) =
       (pprintSeparatedAssigneeList assigneeList ",") @
       [":="] @ (pprintSeparatedExpList expList ",") @ [";\n"]
     | OpAssign (assignee, operator, exp) ->
-      (pprintAssignee assignee)::operator::(pprintExp exp) @ [";\n"]
+      (pprintAssignee assignee)@[operator]@(pprintExp exp) @ [";\n"]
     | Increment (assignee, operator) ->
       (pprintAssignee assignee) @ [operator] @ [";\n"]
 
