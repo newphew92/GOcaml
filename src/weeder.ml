@@ -18,6 +18,8 @@ exception WeederSyntax of string
   TYPE ALIAS HELPERS
 *)
 
+let aliasList = ref []
+
 let rec flattenAliasList renamings =
 (*
 Flatten a list of (string * typeCall) to a (string * typeCallOptions)
@@ -87,7 +89,7 @@ and recGetAliasType alias aliasList stack =
 
 let rec hasUniqueDefault clauses =
   match clauses with
-    | [] -> true
+    | [] -> ()
     | (hd:clause)::tl ->
       ( match hd.options with
         | DefaultSw _ -> hasNoDefault tl
@@ -95,7 +97,7 @@ let rec hasUniqueDefault clauses =
       )
 and hasNoDefault clauses =
   match clauses with
-    | [] -> true
+    | [] -> ()
     | hd::tl ->
       ( match hd.options with
           | DefaultSw _ -> raise (WeederSyntax "switch has multile default case")
@@ -107,7 +109,7 @@ and hasNoDefault clauses =
 *)
 
 let rec weedAst ast:ast =
-  let aliasList = ref (listTypeAlias ast.declarations);
+  let aliasList := (listTypeAlias ast.declarations)
   {
     package=ast.package;
     declarations= List.map (fun x -> (weedDec x false false) ) ast.declarations
@@ -150,7 +152,7 @@ and weedStatement (stat:statement) inLoop inFuncBlock =
     (* eo: exp option *)
     | ReturnS eo -> if not inFuncBlock then
       { theType=t;
-        options = ReturnS (weedOptionalDec eo inLoop inFuncBlock)
+        options = ReturnS (weedOptionalExp eo inLoop inFuncBlock)
       }
       else raise (WeederSyntax "return outside function")
     (* so: statement option, eo: exp option, cl: clause list *)
@@ -193,7 +195,7 @@ and weedDec (declr:dec) inLoop inFuncBlock =
           options=FunctionD (
             s,
             strl,
-            weedOptionaltypeCall tco,
+            weedOptionalTypeCall tco inLoop inFuncBlock,
             List.map (fun x -> weedStatement x inLoop true) sl
             )
         } in x
@@ -209,7 +211,7 @@ and weedDec (declr:dec) inLoop inFuncBlock =
         let x:dec = { theType=t;
           options= VarsDandAssign (
               sl,
-              weedOptionaltypeCall tco,
+              weedOptionalTypeCall tco inLoop inFuncBlock,
               List.map (fun x -> weedExp x inLoop inFuncBlock) el
             )
         } in x
@@ -262,7 +264,7 @@ and weedLoopStat (lStat:loopStat) inLoop inFuncBlock =
     | While (e, sl) ->
       { theType = t;
         options= While (
-            weedExp e,
+            weedExp e inLoop inFuncBlock,
             List.map (fun x -> weedStatement x inLoop inFuncBlock) sl
           )
       }
@@ -325,15 +327,15 @@ and weedAssignation (assig:assignation) inLoop inFuncBlock =
     | OpAssign (a, s, e) ->
       { theType=t;
         options=OpAssign (
-          weedAssignee a,
+          weedAssignee a inLoop inFuncBlock,
           s,
-          weedExp e
+          weedExp e inLoop inFuncBlock
           )
       }
     (* a: assignee, s: string (the operator) *)
     | Increment (a, s) ->
       { theType=t;
-        options=Increment (weedAssignee a, s)
+        options=Increment (weedAssignee a inLoop inFuncBlock, s)
       }
 and weedAssignee (assig:assignee) inLoop inFuncBlock =
   (* t: string option containing None at that point *)
@@ -341,15 +343,42 @@ and weedAssignee (assig:assignee) inLoop inFuncBlock =
   match assig.options with
     | Object e -> (* e: exp (assignable)*)
       { theType=t;
-        options=match e.options with
+        options=Object (match e.options with
           | ExpId _ ->
             weedExp e inLoop inFuncBlock
           | ArrayElem _ ->
             weedExp e inLoop inFuncBlock
           | ObjectField _ ->
             weedExp e inLoop inFuncBlock
-          | _ -> raise (WeederSyntax "cannot assign to expression")
+          | _ -> raise (WeederSyntax "cannot assign to expression") )
       }
+and weedOptionalTypeCall tc inLoop inFuncBlock =
+  match tc with
+    | None -> None
+    | Some t -> Some (weedTypeCall t inLoop inFuncBlock)
+
+and weedTypeCall (tc:typeCall) inLoop inFuncBlock =
+  (* t: string option containing None at that point *)
+  let t = tc.theType in
+  { theType=t;
+    options=match tc.options with
+      | ArrayType (ind, elementsType) -> (* ind: exp *)
+        ArrayType (weedExp ind inLoop inFuncBlock, weedTypeCall elementsType inLoop inFuncBlock)
+      | BuiltInType s -> BuiltInType s
+      | SliceType elementsType ->
+         SliceType (weedTypeCall elementsType inLoop inFuncBlock)
+      (* t: string *)
+      | DeclaredType t ->
+        (match (getAliasType t !aliasList) with
+         | BuiltInType s -> BuiltInType s
+         | SliceType elementsType ->
+            SliceType (weedTypeCall elementsType inLoop inFuncBlock)
+         | ArrayType (e, elementsType) ->
+            ArrayType (weedExp e inLoop inFuncBlock, weedTypeCall elementsType inLoop inFuncBlock)
+         | DeclaredType s ->
+            raise (WeederSyntax (concat "" ("critical error: declared type "::[s])))
+        )
+  }
 and weedExp (ex:exp) inLoop inFuncBlock =
   (* t: string option containing None at that point *)
   let t = ex.theType in
@@ -397,7 +426,7 @@ and weedExp (ex:exp) inLoop inFuncBlock =
       | Lambda (args, fnt, bloc) ->
         Lambda (
           args,
-          weedTypeCall fnt inLoop inFuncBlock,
+          weedOptionalTypeCall fnt inLoop inFuncBlock,
           List.map (fun x -> weedStatement x inLoop true ) bloc
           )
       (* tp: string (type), e: exp *)
@@ -415,30 +444,3 @@ and weedOptionalExp ex inLoop inFuncBlock =
   match ex with
     | None -> None
     | Some e -> Some (weedExp e inLoop inFuncBlock)
-
-and weedTypeCall (tc:typeCall) inLoop inFuncBlock =
-  (* t: string option containing None at that point *)
-  let t = tc.theType in
-  { theType=t;
-    options=match tc.options with
-      | ArrayType (ind, elementsType) -> (* ind: exp *)
-        ArrayType (weedExp ind inLoop inFuncBlock, weedTypeCall elementsType)
-      | BuiltInType s -> BuiltInType s
-      | SliceType elementsType ->
-         SliceType (weedTypeCall elementsType)
-      (* t: string *)
-      | DeclaredType t ->
-        (match (getAliasType t !aliasList) with
-         | BuiltInType s -> BuiltInType s
-         | SliceType elementsType ->
-            SliceType (weedTypeCall elementsType)
-         | ArrayType (e, elementsType) ->
-            ArrayType (weedExp e inLoop inFuncBlock, weedTypeCall elementsType)
-         | DeclaredType s ->
-            raise (WeederSyntax (concat "" ("critical error: declared type "::[s])))
-        )
-  }
-and weedOptionaltypeCall tc inLoop inFuncBlock =
-  match tc with
-    | None -> None
-    | Some t -> Some (weedTypeCall t inLoop inFuncBlock)
