@@ -1,9 +1,9 @@
 
-** Conflict (shift/reduce) in state 71.
-** Token involved: ID
+** Conflict (reduce/reduce) in state 34.
+** Token involved: LPAR
 ** This state is reached from prog after reading:
 
-option(packDec) TYPET ID STRUCT LCURL fieldDec 
+option(packDec) VAR non_empty_id_list LSQPAR ID 
 
 ** The derivations that appear below have the following common factor:
 ** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
@@ -11,51 +11,25 @@ option(packDec) TYPET ID STRUCT LCURL fieldDec
 prog 
 option(packDec) list(terminated(dec,SEMICOLON)) EOF 
                 dec SEMICOLON list(terminated(dec,SEMICOLON)) 
-                typeDec 
-                TYPET ID structType 
-                         STRUCT LCURL list(fieldDec) RCURL 
-                                      fieldDec list(fieldDec) 
-                                               fieldDec list(fieldDec) 
-                                               (?)
+                VAR subDec 
+                    non_empty_id_list typeG 
+                                      LSQPAR exp RSQPAR typeG 
+                                             factor 
+                                             unary 
+                                             primary 
+                                             (?)
 
-** In state 71, looking ahead at ID, shifting is permitted
-** because of the following sub-derivation:
-
-. ID SEMICOLON 
-
-** In state 71, looking ahead at ID, reducing production
-** id_list -> 
+** In state 34, looking ahead at LPAR, reducing production
+** primary -> ID 
 ** is permitted because of the following sub-derivation:
 
-id_list typeG SEMICOLON // lookahead token appears because typeG can begin with ID
-. 
+primary LPAR exp_list RPAR // lookahead token appears
+ID . 
 
-** Conflict (shift/reduce) in state 62.
-** Token involved: ID
-** This state is reached from prog after reading:
-
-option(packDec) TYPET ID STRUCT LCURL 
-
-** The derivations that appear below have the following common factor:
-** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
-
-prog 
-option(packDec) list(terminated(dec,SEMICOLON)) EOF 
-                dec SEMICOLON list(terminated(dec,SEMICOLON)) 
-                typeDec 
-                TYPET ID structType 
-                         STRUCT LCURL list(fieldDec) RCURL 
-                                      fieldDec list(fieldDec) 
-                                      (?)
-
-** In state 62, looking ahead at ID, shifting is permitted
-** because of the following sub-derivation:
-
-. ID SEMICOLON 
-
-** In state 62, looking ahead at ID, reducing production
-** id_list -> 
+** In state 34, looking ahead at LPAR, reducing production
+** typeG -> ID 
 ** is permitted because of the following sub-derivation:
 
-id_list typeG SEMICOLON // lookahead token appears because typeG can begin with ID
-. 
+type_cast 
+typeG LPAR exp RPAR // lookahead token appears
+ID . 

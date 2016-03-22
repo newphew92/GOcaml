@@ -381,7 +381,10 @@ and weedExp ex inLoop inFuncBlock =
       (* tp: string (type), e: exp *)
       | TypeCast (tp, e) ->
         TypeCast (
-          tp,
+          (match tp.options with
+            | BuiltInType t -> tp
+            | _ ->
+              raise WeederSyntax "catastrophic: can only cast from built-in"),
           weedExp e inLoop inFuncBlock
           )
       | _ -> ex (* cases: literals or variable name *)
@@ -396,14 +399,19 @@ and weedTypeCall tc inLoop inFuncBlock =
   let t = tc.theType;
   { theType=t,
     options=match tc.options with
-      | ArrayType ind -> (* ind: exp *)
-        ArrayType (weedExp ind inLoop inFuncBlock)
+      | ArrayType (ind, elementsType) -> (* ind: exp *)
+        ArrayType (weedExp ind inLoop inFuncBlock, weedTypeCall elementsType)
+      | BuiltInType s -> BuiltInType s
+      | SliceType elementsType ->
+         SliceType (weedTypeCall elementsType)
       (* t: string *)
       | DeclaredType t ->
         match (getAliasType t !aliasList) with
          | BuiltInType s -> BuiltInType s
-         | SliceType -> SliceType
-         | ArrayType e -> ArrayType (weedExp e inLoop inFuncBlock)
+         | SliceType elementsType ->
+            SliceType (weedTypeCall elementsType)
+         | ArrayType e elementsType ->
+            ArrayType (weedExp e inLoop inFuncBlock, weedTypeCall elementsType)
          | DeclaredType s ->
             raise WeederSyntax (concat "" "critical error: declared type "::[s])
   }
