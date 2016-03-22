@@ -6,7 +6,7 @@
 # Target: prettyPrint.ml.depends, tags: { extension:ml, file:prettyPrint.ml, ocaml, ocamldep, quiet }
 /home/olivier/.opam/4.02.3/bin/ocamldep.opt -modules prettyPrint.ml > prettyPrint.ml.depends
 + /home/olivier/.opam/4.02.3/bin/ocamldep.opt -modules prettyPrint.ml > prettyPrint.ml.depends
-File "prettyPrint.ml", line 245, characters 0-0:
+File "prettyPrint.ml", line 244, characters 0-0:
 Error: Syntax error
 Command exited with code 2.
 # Compilation unsuccessful.

@@ -60,7 +60,7 @@ and pprintIndentedStatList statList =
   let () = decreaseIndent();
   s
 
-and pprintStatList statList =
+and pprintStatList (statList: statement list) =
   match statList with
     | hd::tl -> (pprintStat hd)@(pprintStatList tl)
     | [] -> []
@@ -69,27 +69,27 @@ and pprintStatList statList =
 and pprintStat stat =
   printIndent()::(pprintInlineStat stat)
 
-and pprintOptionalInlineStat stat =
+and pprintOptionalInlineStat (stat:statement option) =
   match stat with
     | None -> []
-    | Some s -> pprintInlineStat s @ [";"]
+    | Some s -> (pprintInlineStat s) @ [";"]
 
-and pprintInlineStat stat =
+and pprintInlineStat (stat:statement) =
   match stat.options with
     | BreakS -> printIndent()::["break\n"]
     | ContinueS -> printIndent()::["continue\n"]
     (* dc: dec *)
     | DeclareS dc -> (pprintDec dc)
     | ForS loop -> (pprintFor loop)
-    | IfS s -> (pprintIf stat)
+    | IfS (s, cond, ifStat, elseStat) -> (pprintIf stat)
     | PrintS e -> "print(" :: (pprintExp e) @ [")\n"]
-    | PrintlsS e -> "println(" :: (pprintExp e) @ [")\n"]
+    | PrintlnS e -> "println(" :: (pprintExp e) @ [")\n"]
     | ReturnS e -> "return"::(pprintExp e) @ ["\n"]
-    | SwitchS s -> pprintSwitch stat
+    | SwitchS (s, exp, clauses) -> pprintSwitch stat
     | ExpS e -> pprintExp e
     | AssignS a -> pprintAssignation a
 
-and pprintFor forS =
+and pprintFor (forS:loopStat) =
   match forS.options with
     | InfLoop statList ->
       "for"::"{\n"::(pprintIndentedStatList statList) @ ["}\n"]
@@ -101,7 +101,7 @@ and pprintFor forS =
       (pprintAssignation incr) @ ["{\n"] @
       (pprintIndentedStatList statList) @ ["}\n"]
 
-and pprintIf ifS =
+and pprintIf (ifS:statement) =
   match ifS.options with
     | IfS (opStat, cond, ifStats, elseStats) ->
       "if"::(pprintOptionalInlineStat opStat) @
@@ -109,21 +109,21 @@ and pprintIf ifS =
       (pprintIndentedStatList ifStats) @ ["}\n"] @
       ["else {\n"] @
       (pprintIndentedStatList elseStats) @ ["}\n"]
-    | _ -> raise PrettyPrintError "catastrophic error on in if statement"
+    | _ -> raise (PrettyPrintError "catastrophic error on in if statement")
 
-and pprintSwitch switchS =
+and pprintSwitch (switchS:statement) =
   match switchS.options with
    | SwitchS (statOp, expOp, clauses) ->
     "switch"::(pprintOptionalInlineStat opStat) @ pprintOptionalExp @ ["{\n"] @
     (pprintClauseList clauses) @ ["}\n"]
-   | _ -> raise PrettyPrintError "catastrophic error on switch statement"
+   | _ -> raise (PrettyPrintError "catastrophic error on switch statement")
 
-and pprintClauseList clauses =
+and pprintClauseList (clauses: clause list) =
   match clauses with
     | hd::tl -> (pprintClause hd) @ (pprintClauseList tl)
     | [] -> []
 
-and pprintClause clause =
+and pprintClause (clause:clause) =
   match clause.options with
     | OptionSw (condList, statList) ->
       "case"::(pprintSeparatedExpList condList ",") @ ["\n"] @
@@ -152,7 +152,7 @@ and pprintTypeAliasList aliasList =
       pprintTypeAliasList tl
     | [] -> []
 
-and pprintTypeDec typeDec =
+and pprintTypeDec (typeDec:typeDec) =
   match typeDec.options with
     | Simple strAndTypeList ->
       "("::(pprintTypeAliasList strAndTypeList) @ [")"]
@@ -164,13 +164,13 @@ and pprintStructFieldDecList fieldList =
     | hd::tl -> (pprintStructFieldDec hd) @ (pprintStructFieldDecList tl)
     | [] -> []
 
-and pprintStructFieldDec fields =
-  match fields with
+and pprintStructFieldDec (fields:structFieldDec) =
+  match fields.options with
     (* FieldsBunch of string list * typeCall *)
     | FieldsBunch (names, typeC) ->
-      (concat ", " names) @ (pprintTypeCall typeC) @ [";\n"]
+      (concat ", " names) :: (pprintTypeCall typeC) @ [";\n"]
 
-and pprintAssignation assign =
+and pprintAssignation (assign:assignation) =
   match assign.options with
     | Assign (assignees, expList) ->
       (pprintSeparatedAssigneeList assignees ",") @
@@ -183,11 +183,11 @@ and pprintAssignation assign =
     | Increment (assignee, operator) ->
       (pprintAssignee assignee) @ [operator] @ [";\n"]
 
-and pprintAssignee assignee =
+and pprintAssignee (assignee:assignee) =
   match assignee.options with
     | Object e -> pprintExp e
 
-and pprintSeparatedAssigneeList assignees separator =
+and pprintSeparatedAssigneeList (assignees:assignee list) separator =
   match assignees with
     | hd::[] -> pprintAssignee hd
     | hd::tl ->
@@ -195,7 +195,7 @@ and pprintSeparatedAssigneeList assignees separator =
       pprintSeparatedAssigneeList tl separator
     | [] -> []
 
-and pprintOptionalExp expOp =
+and pprintOptionalExp (expOp: exp option) =
   match expOp with
     | None -> []
     | Some e -> pprintExp e
