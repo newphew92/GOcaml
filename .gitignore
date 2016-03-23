@@ -1,4 +1,9 @@
 ./syntax.pdf
 src/*.mli
 src/*.ml
+src/*.conflicts
+src/_build
+!src/prettyPrint.ml
 !src/weeder.ml
+!src/main.ml
+!src/ast.ml

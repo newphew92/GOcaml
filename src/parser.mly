@@ -1,3 +1,15 @@
+%{
+  open Ast
+
+  exception ParserError of string
+
+  let rec deOptionTypeInList tupleList =
+    match tupleList with
+      | [] -> []
+      | (a, Some t)::tl -> (a, t)::(deOptionTypeInList tl)
+      | _ -> raise (ParserError "no type given in type declaration")
+%}
+
 (* Tokens *)
 %token <string> INT
 %token <string> OCTAL
@@ -7,67 +19,70 @@
 %token <string> RAWSTRING
 %token <string> RUNESTRING
 %token <string> TYPE
-%token AMPERSAND, AMPHAT, AMPHATEQ
-%token AND, OR, APPEND
-%token BREAK
-%token CASE, SWITCH
-%token CHAN
-%token COLEQ, COLON, SEMICOLON,COMMA
-%token CONST
-%token CONTINUE
-%token DEFAULT
-%token DEFER
-%token DOT, DOTS
-%token EEQUAL, EQUAL
-%token ELSE, IF
-%token EOF
-%token FALLTHROUGH
-%token FOR
-%token FUNC
-%token GGT, GGTEQ
-%token GO, GOTO
-%token GT, GTEQ
-%token HAT, HATEQ
-%token IMPORT
-%token INTERFACE
-%token LCURL, RCURL
-%token LLT, LLTEQ
-%token LPAR, RPAR
-%token LSQPAR, RSQPAR
-%token LT, LTEQ
-%token LTMIN
-%token MAP
-%token MINEQ, MINUS, MMINUS
-%token NOT, NOTEQ
-%token PACKAGE
-%token PERCENT
-%token PEREQ
-%token PLUS, PLUSEQ, PPLUS
-%token PRINT, PRINTLN
-%token RANGE
-%token RETURN
-%token SELECT
-%token SLASH, SLASHEQ
-%token STAR, STAREQ
-%token STRUCT
-%token TYPET
-%token VAR
-%token VERTEQ
-%token VERTICAL
+(* Unused but reserved tokens
+ %token APPEND, CHAN, CONST, DEFER, DOTS, FALLTHROUGH
+%token GO, GOTO, IMPORT, INTERFACE, MAP, RANGE, SELECT *)
+%token <string> AMPERSAND, AMPHAT, AMPHATEQ
+%token <string> AND, OR
+%token <string> BREAK
+%token <string> CASE, SWITCH
+%token <string> COLEQ, COLON, SEMICOLON,COMMA
+%token <string> CONTINUE
+%token <string> DEFAULT
+%token <string> DOT
+%token <string> EEQUAL, EQUAL
+%token <string> ELSE, IF
+%token <string> EOF
+%token <string> FOR
+%token <string> FUNC
+%token <string> GGT, GGTEQ
+%token <string> GT, GTEQ
+%token <string> HAT, HATEQ
+%token <string> LCURL, RCURL
+%token <string> LLT, LLTEQ
+%token <string> LPAR, RPAR
+%token <string> LSQPAR, RSQPAR
+%token <string> LT, LTEQ
+%token <string> LTMIN
+%token <string> MINEQ, MINUS, MMINUS
+%token <string> NOT, NOTEQ
+%token <string> PACKAGE
+%token <string> PERCENT
+%token <string> PEREQ
+%token <string> PLUS, PLUSEQ, PPLUS
+%token <string> PRINT, PRINTLN
+%token <string> RETURN
+%token <string> SLASH, SLASHEQ
+%token <string> STAR, STAREQ
+%token <string> STRUCT
+%token <string> TYPET
+%token <string> VAR
+%token <string> VERTEQ
+%token <string> VERTICAL
 
 %token <string> ID
-%left SEMICOLON
-%left OR
-%left AND
-%nonassoc NOT
-%nonassoc LT LTEQ GT GTEQ EQ NOTEQ
-%left MINUS PLUS
-%left STAR SLASH
-%nonassoc LBRACKET
-%nonassoc ELSE
-%nonassoc BEFORE
 (* Nodes type *)
-%type <int> prog
+%type <ast> prog
+%type <string> packDec
+%type <dec> dec
+%type <dec> subDec
+%type <typeDec> typeDec
+%type <structFieldDec> fieldDec
+%type <typeCall> typeG
+%type <statement> stat
+%type <assignation> assign
+%type <assignee> assignee
+%type <statement> print
+%type <exp> exp
+%type <exp> primary
+%type <exp> type_cast
+%type <exp> constVal
+%type <exp> stringVal
+%type <statement> switchStat
+%type <clause> switchClause
+%type <statement> simpleStat
+%type <loopStat> forStat
+
 
 %start prog
 %%
@@ -84,7 +99,7 @@ packDec: (*only one package declaration allowed*)
 dec:
   | VAR subDec { $2 }
   | VAR LPAR subDec_list_separated_semicolon RPAR { { theType=None; options=ListedVarD $3 } }
-  | FUNC ID LPAR id_list_with_types RPAR block { { theType=None; options=FunctionD $3 $4 (*the optional type*) $5 } } (* IN WEEDING CHECK THAT THIS IS NOT INSIDE A FUNC *)
+  | FUNC ID LPAR id_list_with_types RPAR option(typeG) block { { theType=None; options=FunctionD ($2, $4, $6, $7) } } (* IN WEEDING CHECK THAT THIS IS NOT INSIDE A FUNC *)
   | typeDec { { theType=None; options=TypeD $1} }
 
 subDec_list_separated_semicolon:
@@ -96,18 +111,16 @@ non_empty_subDec_list_separated_semicolon:
   | subDec SEMICOLON non_empty_subDec_list_separated_semicolon { $1 :: $3 }
 
 subDec:
-  | non_empty_id_list typeG { { theType=None; options=VarsD $1 $2 } }
-  | non_empty_id_list option(typeG) EQUAL non_empty_exp_list { { theType=None; options=VarsDandAssign $1 $2 $4 } }
+  | non_empty_id_list typeG { { theType=None; options=VarsD ($1, $2) } }
+  | non_empty_id_list option(typeG) EQUAL non_empty_exp_list { { theType=None; options=VarsDandAssign ($1, $2, $4) } }
 typeDec:
-  | TYPET ID TYPE { { theType=None; options=Simple ($2 * $3) } }
-  | TYPET LPAR id_list_with_types_separated_semicolon RPAR { { theType=None; options=Simple $3 } }
-  | TYPET ID structType { { theType=None; options=StructD ($2 * $3) } }
+  | TYPET ID typeG { { theType=None; options=Simple [($2, $3)] } }
+  | TYPET LPAR id_list_with_types_separated_semicolon RPAR { { theType=None; options=Simple (deOptionTypeInList $3) } }
+  | TYPET ID structType { { theType=None; options=StructD ($2, $3) } }
 structType:
   | STRUCT LCURL list(fieldDec) RCURL { $3 }
 fieldDec:
-  | id_list TYPE SEMICOLON { { theType=None; options=FieldsBunch $1 $2 } }
-  | id_list LSQPAR exp RSQPAR TYPE SEMICOLON { { theType=None; options=ListFieldsBunch $1 $3 $5 } }
-  | ID SEMICOLON { { theType=None; options=Field $1 } }
+  | non_empty_id_list typeG SEMICOLON { { theType=None; options=FieldsBunch ($1, $2) } }
 
 block:
   | LCURL stat_list RCURL {$2}
@@ -122,13 +135,13 @@ stat_list:
 
 typeG: (*basic types*)
   | TYPE { { theType=None; options=BuiltInType $1 } }
-  | LSQPAR RSQPAR { { theType=None; options=SliceType } } (*slice*)
-  | LSQPAR exp RSQPAR { { theType=None; options=ArrayType $2 } } (*array*)
+  | LSQPAR RSQPAR typeG { { theType=None; options=SliceType $3 } } (*slice*)
+  | LSQPAR exp RSQPAR typeG { { theType=None; options=ArrayType ($2, $4) } } (*array*)
   | ID { { theType=None; options=DeclaredType $1 } }
 
 stat:
   | simpleStat SEMICOLON { $1 } (* Assign and expr *)
-  | dec SEMICOLON { $1 }
+  | dec SEMICOLON { {theType=None; options= DeclareS $1} }
   | print SEMICOLON { $1 }
   | ifStat SEMICOLON { $1  }
   | switchStat SEMICOLON { $1 }
@@ -138,66 +151,63 @@ stat:
   | RETURN option(exp) SEMICOLON { { theType=None; options=ReturnS $2 } }
 
 assign:
-  | non_empty_assignee_list EQUAL non_empty_exp_list { { theType=None; options=Assign $1 $3 } }
-  | non_empty_assignee_list COLEQ non_empty_exp_list { { theType=None; options=DeclAssign $1 $3 } }
-  | assignee PLUSEQ exp { { theType=None; options=OpAssign $1 $2 $3 } }
-  | assignee MINEQ exp { { theType=None; options=OpAssign $1 $2 $3 } }
-  | assignee STAREQ exp { { theType=None; options=OpAssign $1 $2 $3 } }
-  | assignee SLASHEQ exp { { theType=None; options=OpAssign $1 $2 $3 } }
-  | assignee PEREQ exp { { theType=None; options=OpAssign $1 $2 $3 } }
-  | assignee VERTEQ exp { { theType=None; options=OpAssign $1 $2 $3 } }
-  | assignee HATEQ exp { { theType=None; options=OpAssign $1 $2 $3 } }
-  | assignee LLTEQ exp { { theType=None; options=OpAssign $1 $2 $3 } }
-  | assignee GGTEQ exp { { theType=None; options=OpAssign $1 $2 $3 } }
-  | assignee AMPHATEQ exp { { theType=None; options=OpAssign $1 $2 $3 } }
+  | non_empty_assignee_list EQUAL non_empty_exp_list { let x:assignation = { theType=None; options=Assign ($1, $3) } in x }
+  | non_empty_assignee_list COLEQ non_empty_exp_list { let x:assignation = { theType=None; options=DeclAssign ($1, $3) } in x }
+  | assignee PLUSEQ exp { let x:assignation = { theType=None; options=OpAssign ($1, $2, $3) } in x }
+  | assignee MINEQ exp { let x:assignation = { theType=None; options=OpAssign ($1, $2, $3) } in x }
+  | assignee STAREQ exp { let x:assignation = { theType=None; options=OpAssign ($1, $2, $3) } in x }
+  | assignee SLASHEQ exp { let x:assignation = { theType=None; options=OpAssign ($1, $2, $3) } in x }
+  | assignee PEREQ exp { let x:assignation = { theType=None; options=OpAssign ($1, $2, $3) } in x }
+  | assignee VERTEQ exp { let x:assignation = { theType=None; options=OpAssign ($1, $2, $3) } in x }
+  | assignee HATEQ exp { let x:assignation = { theType=None; options=OpAssign ($1, $2, $3) } in x }
+  | assignee LLTEQ exp { let x:assignation = { theType=None; options=OpAssign ($1, $2, $3) } in x }
+  | assignee GGTEQ exp { let x:assignation = { theType=None; options=OpAssign ($1, $2, $3) } in x }
+  | assignee AMPHATEQ exp { let x:assignation = { theType=None; options=OpAssign ($1, $2, $3) } in x }
   | incDec { $1 }
 
 assignee:
   | primary { { theType=None; options=Object $1 } } (* TYPECHECKER WILL NEED TO GET SURE THIS IS AN ID *)
-
-assignee_list:
-  | { [] }
-  | non_empty_id_list_with_types { $1 }
 
 non_empty_assignee_list:
   | assignee { [$1] }
   | assignee COMMA non_empty_assignee_list { $1 :: $3 }
 
 incDec:
-  | assignee PPLUS { { theType=None; options=Increment $1 $2 } } (* equivalent to ID += 1 *)
-  | assignee MMINUS { { theType=None; options=Increment $1 $2 } }
+  | assignee PPLUS { let x:assignation = { theType=None; options=Increment ($1, $2) } in x } (* equivalent to ID += 1 *)
+  | assignee MMINUS { let x:assignation = { theType=None; options=Increment ($1, $2) } in x }
 
 print:
   | PRINT LPAR exp_list RPAR SEMICOLON { { theType=None; options=PrintS $3 } }
   | PRINTLN LPAR exp_list RPAR SEMICOLON { { theType=None; options=PrintlnS $3 } }
 
 exp:
-  | exp logicOp factor { { theType=None; options=BinaryOp $1 $2 $3 } }
-  | exp addOp factor { { theType=None; options=BinaryOp $1 $2 $3 } }
+  | exp logicOp factor { { theType=None; options=BinaryOp ($1, $2, $3) } }
+  | exp addOp factor { { theType=None; options=BinaryOp ($1, $2, $3) } }
   | factor { $1 }
 
 factor:
-  | factor multOp unary { { theType=None; options=BinaryOp $1 $2 $3 } }
+  | factor multOp unary { { theType=None; options=BinaryOp ($1, $2, $3) } }
   | unary { $1 }
 
 unary:
-  | unaryOp primary { { theType=None; options=UnaryOp $1 $2 } }
+  | unaryOp primary { { theType=None; options=UnaryOp ($1, $2) } }
   | primary { $1 }
 
 primary:
   | LPAR exp RPAR {$2}
   | ID { { theType=None; options=ExpId $1 } }
   | constVal {$1}
-  | TYPE LPAR exp RPAR {TypeCast $1 $3} (*typecast*)
-  | FUNC LPAR id_list_with_types RPAR option(typeG) block { { theType=None; options=Lambda $3 $4 $5 } } (* Function literal *)
-  | primary LSQPAR exp RSQPAR { { theType=None; options=ArrayElem $1 $3 } } (* index element *)
-  | primary LSQPAR option(exp) COLON option(exp) RSQPAR { {theType=None; options=ArraySlice $1 $3 $5 } } (* slices *)
-  | primary LPAR exp_list RPAR { { theType=None; options=FunctionCall $1 $3 } } (* function call *)
-  | ID DOT ID { { theType=None; options=ObjectField $1 $3 } } (* package.field or struct.field *)
+  | type_cast {$1}
+  | FUNC LPAR id_list_with_types RPAR option(typeG) block { { theType=None; options=Lambda ($3, $5, $6) } } (* Function literal *)
+  | primary LSQPAR exp RSQPAR { { theType=None; options=ArrayElem ($1, $3) } } (* index element *)
+  | primary LSQPAR option(exp) COLON option(exp) RSQPAR { {theType=None; options=ArraySlice ($1, $3, $5) } } (* slices *)
+  | primary LPAR exp_list RPAR { { theType=None; options=FunctionCall ($1, $3) } } (* function call *)
+  | primary DOT ID { { theType=None; options=ObjectField ($1, $3) } } (* package.field or struct.field *)
 
-id_list:
-  | { [] }
-  | non_empty_id_list { $1 }
+type_cast:
+  | TYPE LPAR exp RPAR {
+      let typeObject = { theType = None; options = (BuiltInType $1) } in
+      {theType=None; options=TypeCast (typeObject, $3)} } (*typecast only with Built-in types*)
 
 non_empty_id_list:
   | ID { [$1] }
@@ -208,22 +218,22 @@ id_list_with_types:
   | non_empty_id_list_with_types { $1 }
 
 non_empty_id_list_with_types:
-  | ID option(TYPE) { [($1 * $2)] }
-  | ID option(TYPE) COMMA non_empty_id_list_with_types { ($1 * $2) :: $4 }
+  | ID option(typeG) { [($1, $2)] }
+  | ID option(typeG) COMMA non_empty_id_list_with_types { ($1, $2) :: $4 }
 
 id_list_with_types_separated_semicolon:
   | { [] }
   | non_empty_id_list_with_types_separated_semicolon { $1 }
 
 non_empty_id_list_with_types_separated_semicolon:
-  | ID option(TYPE) { [($1 * $2)] }
-  | ID option(TYPE) SEMICOLON non_empty_id_list_with_types_separated_semicolon { ($1 * $2) :: $4 }
+  | ID option(typeG) { [($1, $2)] }
+  | ID option(typeG) SEMICOLON non_empty_id_list_with_types_separated_semicolon { ($1, $2) :: $4 }
 
 constVal :
   | INT { { theType=None; options=IntConst $1 } }
   | FLOAT { { theType=None; options=FloatConst $1 } }
   | RUNESTRING { { theType=None; options=RuneConst $1 } }
-  | OCTAL { { theType=None; options=OctalConst $1 } }
+  | OCTAL { { theType=None; options=OctConst $1 } }
   | HEXA { { theType=None; options=HexaConst $1 } }
   | stringVal {$1}
 
@@ -268,11 +278,11 @@ unaryOp:
   | LTMIN {$1}
 
 switchStat:
-  | SWITCH option(exp) LCURL list(switchClause) RCURL { { theType=None; options=SwitchS None $3 $5} }
-  | SWITCH exp SEMICOLON option(exp) LCURL list(switchClause) RCURL { { theType=None; options=SwitchS (Some (ExpS $2)) $3 $5} }
-  | SWITCH assign SEMICOLON option(exp) LCURL list(switchClause) RCURL { { theType=None; options=SwitchS (Some (AssignS $2)) $3 $5} }
+  | SWITCH option(exp) LCURL list(switchClause) RCURL { let x:statement = { theType=None; options=SwitchS (None, $2, $4) } in x }
+  | SWITCH simpleStat SEMICOLON option(exp) LCURL list(switchClause) RCURL {
+      { theType=None; options=SwitchS ((Some $2), $4, $6)} }
 switchClause:
-  | CASE exp_list COLON stat_list {{ theType=None; options=OptionSw $2 $4} }
+  | CASE exp_list COLON stat_list {{ theType=None; options=OptionSw ($2, $4) } }
   | DEFAULT COLON stat_list {{ theType=None; options=DefaultSw $3} }
 
 exp_list:
@@ -284,9 +294,9 @@ non_empty_exp_list:
   | exp COMMA non_empty_exp_list { $1 :: $3 }
 
 ifStat:
-  | IF exp block elseStat {{ theType=None; options=IfS None $3 $4} }
-  | IF exp SEMICOLON exp block elseStat {{ theType=None; options=IfS (Some (ExpS $2)) $3 $4} }
-  | IF assign SEMICOLON exp block elseStat {{ theType=None; options=IfS (Some (AssignS $2)) $3 $4} }
+  | IF exp block elseStat {{ theType=None; options=IfS (None, $2, $3, $4)} }
+  | IF simpleStat SEMICOLON exp block elseStat {
+    { theType=None; options=IfS ((Some $2), $4, $5, $6) } }
 
 elseStat:
   | { [] }
@@ -294,11 +304,10 @@ elseStat:
   | ELSE block SEMICOLON { $2 }
 
 simpleStat:
-  | exp SEMICOLON { { theType=None; options=ExpS $1 } }
-  | assign SEMICOLON { { theType=None; options=AssignS $1 } }
+  | exp SEMICOLON { let x:statement = { theType=None; options=(ExpS $1) } in x }
+  | assign SEMICOLON { let x:statement = { theType=None; options=(AssignS $1) }in x }
 
 forStat:
   | FOR block SEMICOLON { { theType=None; options=InfLoop $2 } }
-  | FOR exp block SEMICOLON { { theType=None; options=While $2 $3 } }
-  | FOR assign SEMICOLON exp SEMICOLON incDec block SEMICOLON { { theType=None; options=For $2 $4 $6 $7 } }
-;
+  | FOR exp block SEMICOLON { { theType=None; options=While ($2, $3) } }
+  | FOR assign SEMICOLON exp SEMICOLON incDec block SEMICOLON { { theType=None; options=For ($2, $4, $6, $7) } }

@@ -57,16 +57,14 @@ and statementOptions =
   | AssignS of assignation
 and decOptions =
   | ListedVarD of dec list
-  | FunctionD of string * (string * string option) list * typeCall option * statement list
+  | FunctionD of string * (string * typeCall option) list * typeCall option * statement list
   | VarsD of string list * typeCall
   | VarsDandAssign of string list * typeCall option * exp list
   | TypeD of typeDec
 and structFieldDecOptions =
-  | FieldsBunch of string list * string
-  | ListFieldsBunch of string list * exp * string
-  | Field of string
+  | FieldsBunch of string list * typeCall
 and typeDecOptions =
-  | Simple of (string * string) list
+  | Simple of (string * typeCall) list
   | StructD of string * structFieldDec list
 and loopStatOptions =
   | InfLoop of statement list
@@ -98,10 +96,10 @@ and expOptions =
   | ArraySlice of exp * exp option * exp option
   | ObjectField of exp * string
   | FunctionCall of exp * exp list
-  | Lambda of (string * string option) list * typeCall option * statement list
-  | TypeCast of string * exp
+  | Lambda of (string * typeCall option) list * typeCall option * statement list
+  | TypeCast of typeCall * exp
 and typeCallOptions =
   | BuiltInType of string
   | DeclaredType of string
-  | SliceType
-  | ArrayType of exp
+  | SliceType of typeCall
+  | ArrayType of exp * typeCall

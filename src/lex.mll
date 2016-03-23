@@ -7,6 +7,7 @@
   open Parser
 
   exception SyntaxError of string
+  exception UnusedToken of string
 
   let next_line lexbuf =
     let pos = lexbuf.lex_curr_p in
@@ -82,8 +83,8 @@ let type = "int" | "float64" | "bool" | "rune" | "string"
 rule read =
   parse
   | space           { read lexbuf }
-  | semicolon       { semiFlagDown();  SEMICOLON }
-  | linebreak       { semiFlagDown();  if !insSemi then SEMICOLON }
+  | semicolon       { semiFlagDown();  SEMICOLON (Lexing.lexeme lexbuf)}
+  | linebreak       { semiFlagDown();  if !insSemi then SEMICOLON (Lexing.lexeme lexbuf)}
   | comment         { read lexbuf }
   | int             { semiFlagUp();  INT (Lexing.lexeme lexbuf) }
   | octal           { semiFlagUp();  OCTAL (Lexing.lexeme lexbuf) }
@@ -93,82 +94,81 @@ rule read =
   | rawString       { semiFlagUp();  RAWSTRING (Lexing.lexeme lexbuf) }
   | runeString      { semiFlagUp();  RUNESTRING (Lexing.lexeme lexbuf) }
   | type            { semiFlagDown();  TYPE (Lexing.lexeme lexbuf) }
-  | '+'             { semiFlagDown();  PLUS }
-  | '-'             { semiFlagDown();  MINUS }
-  | '*'             { semiFlagDown();  STAR }
-  | '/'             { semiFlagDown();  SLASH }
-  | '%'             { semiFlagDown();  PERCENT }
-  | '&'             { semiFlagDown();  AMPERSAND }
-  | '|'             { semiFlagDown();  VERTICAL }
-  | '^'             { semiFlagDown();  HAT }
-  | "<<"            { semiFlagDown();  LLT }
-  | ">>"            { semiFlagDown();  GGT }
-  | "&^"            { semiFlagDown();  AMPHAT }
-  | "+="            { semiFlagDown();  PLUSEQ }
-  | "-="            { semiFlagDown();  MINEQ }
-  | "*="            { semiFlagDown();  STAREQ }
-  | "/="            { semiFlagDown();  SLASHEQ }
-  | "%="            { semiFlagDown();  PEREQ}
-  | "|="            { semiFlagDown();  VERTEQ }
-  | "^="            { semiFlagDown();  HATEQ }
-  | "<<="           { semiFlagDown();  LLTEQ }
-  | ">>="           { semiFlagDown();  GGTEQ }
-  | ":="            { semiFlagDown();  COLEQ }
-  | "&^="           { semiFlagDown();  AMPHATEQ }
-  | "&&"            { semiFlagDown();  AND }
-  | "|| "            { semiFlagDown();  OR }
-  | "<-"            { semiFlagDown();  LTMIN }
-  | "++"            { semiFlagUp();  PPLUS }
-  | "--"            { semiFlagUp();  MMINUS }
-  | "=="            { semiFlagDown();  EEQUAL }
-  | '<'             { semiFlagDown();  LT }
-  | '>'             { semiFlagDown();  GT }
-  | '='             { semiFlagDown();  EQUAL }
-  | '!'             { semiFlagDown();  NOT }
-  | "!="            { semiFlagDown();  NOTEQ}
-  | "<="            { semiFlagDown();  LTEQ }
-  | ">="            { semiFlagDown();  GTEQ }
-  | "..."           { semiFlagDown();  DOTS }
-  | '('             { semiFlagDown();  LPAR }
-  | ')'             { semiFlagUp();  RPAR }
-  | '['             { semiFlagDown();  LSQPAR}
-  | ']'             { semiFlagUp();  RSQPAR }
-  | '{'             { semiFlagDown();  LCURL }
-  | '}'             { semiFlagUp();  RCURL}
-  | ','             { semiFlagDown();  COMMA }
-  | '.'             { semiFlagDown();  DOT }
-  | ':'             { semiFlagDown();  COLON }
-  | "append"         { semiFlagDown();  APPEND }
-  | "eof"            { semiFlagDown();  EOF }
-  | "break"          { semiFlagUp();  BREAK }
-  | "case"           { semiFlagDown();  CASE }
-  | "chan"           { semiFlagDown();  CHAN }
-  | "const"          { semiFlagDown();  CONST }
-  | "continue"       { semiFlagUp();  CONTINUE }
-  | "default"        { semiFlagDown();  DEFAULT }
-  | "defer"          { semiFlagDown();  DEFER }
-  | "else"           { semiFlagDown();  ELSE }
-  | "fallthrough"    { semiFlagUp();  FALLTHROUGH }
-  | "for"            { semiFlagDown();  FOR }
-  | "func"           { semiFlagDown();  FUNC }
-  | "go"             { semiFlagDown();  GO }
-  | "goto"           { semiFlagDown();  GOTO }
-  | "if"             { semiFlagDown();  IF }
-  | "import"         { semiFlagDown();  IMPORT }
-  | "interface"      { semiFlagDown();  INTERFACE }
-  | "map"            { semiFlagDown();  MAP }
-  | "package"        { semiFlagDown();  PACKAGE }
-  | "print"          { semiFlagDown();  PRINT }
-  | "println"        { semiFlagDown();  PRINTLN }
-  | "range"          { semiFlagDown();  RANGE }
-  | "return"         { semiFlagUp();  RETURN }
-  | "select"         { semiFlagDown();  SELECT }
-  | "struct"         { semiFlagDown();  STRUCT }
-  | "switch"         { semiFlagDown();  SWITCH }
-  | "type"           { semiFlagDown();  TYPET }
-  | "var"            { semiFlagDown();  VAR }
+  | '+'             { semiFlagDown();  PLUS (Lexing.lexeme lexbuf) }
+  | '-'             { semiFlagDown();  MINUS (Lexing.lexeme lexbuf) }
+  | '*'             { semiFlagDown();  STAR (Lexing.lexeme lexbuf) }
+  | '/'             { semiFlagDown();  SLASH (Lexing.lexeme lexbuf) }
+  | '%'             { semiFlagDown();  PERCENT (Lexing.lexeme lexbuf) }
+  | '&'             { semiFlagDown();  AMPERSAND (Lexing.lexeme lexbuf) }
+  | '|'             { semiFlagDown();  VERTICAL (Lexing.lexeme lexbuf) }
+  | '^'             { semiFlagDown();  HAT (Lexing.lexeme lexbuf) }
+  | "<<"            { semiFlagDown();  LLT (Lexing.lexeme lexbuf) }
+  | ">>"            { semiFlagDown();  GGT (Lexing.lexeme lexbuf) }
+  | "&^"            { semiFlagDown();  AMPHAT (Lexing.lexeme lexbuf) }
+  | "+="            { semiFlagDown();  PLUSEQ (Lexing.lexeme lexbuf) }
+  | "-="            { semiFlagDown();  MINEQ (Lexing.lexeme lexbuf) }
+  | "*="            { semiFlagDown();  STAREQ (Lexing.lexeme lexbuf) }
+  | "/="            { semiFlagDown();  SLASHEQ (Lexing.lexeme lexbuf) }
+  | "%="            { semiFlagDown();  PEREQ (Lexing.lexeme lexbuf) }
+  | "|="            { semiFlagDown();  VERTEQ (Lexing.lexeme lexbuf) }
+  | "^="            { semiFlagDown();  HATEQ (Lexing.lexeme lexbuf) }
+  | "<<="           { semiFlagDown();  LLTEQ (Lexing.lexeme lexbuf) }
+  | ">>="           { semiFlagDown();  GGTEQ (Lexing.lexeme lexbuf) }
+  | ":="            { semiFlagDown();  COLEQ (Lexing.lexeme lexbuf) }
+  | "&^="           { semiFlagDown();  AMPHATEQ (Lexing.lexeme lexbuf) }
+  | "&&"            { semiFlagDown();  AND (Lexing.lexeme lexbuf) }
+  | "|| "            { semiFlagDown();  OR (Lexing.lexeme lexbuf) }
+  | "<-"            { semiFlagDown();  LTMIN (Lexing.lexeme lexbuf) }
+  | "++"            { semiFlagUp();  PPLUS (Lexing.lexeme lexbuf) }
+  | "--"            { semiFlagUp();  MMINUS (Lexing.lexeme lexbuf) }
+  | "=="            { semiFlagDown();  EEQUAL (Lexing.lexeme lexbuf) }
+  | '<'             { semiFlagDown();  LT (Lexing.lexeme lexbuf) }
+  | '>'             { semiFlagDown();  GT (Lexing.lexeme lexbuf) }
+  | '='             { semiFlagDown();  EQUAL (Lexing.lexeme lexbuf) }
+  | '!'             { semiFlagDown();  NOT (Lexing.lexeme lexbuf) }
+  | "!="            { semiFlagDown();  NOTEQ (Lexing.lexeme lexbuf)}
+  | "<="            { semiFlagDown();  LTEQ (Lexing.lexeme lexbuf) }
+  | ">="            { semiFlagDown();  GTEQ (Lexing.lexeme lexbuf) }
+  | "..."           { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
+  | '('             { semiFlagDown();  LPAR (Lexing.lexeme lexbuf) }
+  | ')'             { semiFlagUp();  RPAR (Lexing.lexeme lexbuf) }
+  | '['             { semiFlagDown();  LSQPAR (Lexing.lexeme lexbuf) }
+  | ']'             { semiFlagUp();  RSQPAR (Lexing.lexeme lexbuf) }
+  | '{'             { semiFlagDown();  LCURL (Lexing.lexeme lexbuf) }
+  | '}'             { semiFlagUp();  RCURL (Lexing.lexeme lexbuf) }
+  | ','             { semiFlagDown();  COMMA (Lexing.lexeme lexbuf) }
+  | '.'             { semiFlagDown();  DOT (Lexing.lexeme lexbuf) }
+  | ':'             { semiFlagDown();  COLON (Lexing.lexeme lexbuf) }
+  | "append"         { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
+  | "break"          { semiFlagUp();  BREAK (Lexing.lexeme lexbuf) }
+  | "case"           { semiFlagDown();  CASE (Lexing.lexeme lexbuf)}
+  | "chan"           { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
+  | "const"          { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
+  | "continue"       { semiFlagUp();  CONTINUE (Lexing.lexeme lexbuf) }
+  | "default"        { semiFlagDown();  DEFAULT (Lexing.lexeme lexbuf) }
+  | "defer"          { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
+  | "else"           { semiFlagDown();  ELSE (Lexing.lexeme lexbuf) }
+  | "fallthrough"    { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
+  | "for"            { semiFlagDown();  FOR (Lexing.lexeme lexbuf) }
+  | "func"           { semiFlagDown();  FUNC (Lexing.lexeme lexbuf) }
+  | "go"             { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
+  | "goto"           { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
+  | "if"             { semiFlagDown();  IF (Lexing.lexeme lexbuf) }
+  | "import"         { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
+  | "interface"      { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
+  | "map"            { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
+  | "package"        { semiFlagDown();  PACKAGE (Lexing.lexeme lexbuf) }
+  | "print"          { semiFlagDown();  PRINT (Lexing.lexeme lexbuf) }
+  | "println"        { semiFlagDown();  PRINTLN (Lexing.lexeme lexbuf) }
+  | "range"          { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
+  | "return"         { semiFlagUp();  RETURN (Lexing.lexeme lexbuf) }
+  | "select"         { raise UnusedToken (Lexing.lexeme lexbuf @ " is reserved, but unused in GoLite") }
+  | "struct"         { semiFlagDown();  STRUCT (Lexing.lexeme lexbuf) }
+  | "switch"         { semiFlagDown();  SWITCH (Lexing.lexeme lexbuf) }
+  | "type"           { semiFlagDown();  TYPET (Lexing.lexeme lexbuf) }
+  | "var"            { semiFlagDown();  VAR (Lexing.lexeme lexbuf) }
   | id               { semiFlagUp();  ID (Lexing.lexeme lexbug) }
-  | eof              { semiFlagDown();  EOF }
+  | eof              { semiFlagDown();  EOF (Lexing.lexeme lexbuf) }
 
 {
   (* Trailer *)
