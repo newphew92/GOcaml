@@ -1,77 +1,77 @@
 exception Error
 
 type token = 
-  | VERTICAL
-  | VERTEQ
-  | VAR
-  | TYPET
+  | VERTICAL of (string)
+  | VERTEQ of (string)
+  | VAR of (string)
+  | TYPET of (string)
   | TYPE of (string)
-  | SWITCH
-  | STRUCT
+  | SWITCH of (string)
+  | STRUCT of (string)
   | STRING of (string)
-  | STAREQ
-  | STAR
-  | SLASHEQ
-  | SLASH
-  | SEMICOLON
+  | STAREQ of (string)
+  | STAR of (string)
+  | SLASHEQ of (string)
+  | SLASH of (string)
+  | SEMICOLON of (string)
   | RUNESTRING of (string)
-  | RSQPAR
-  | RPAR
-  | RETURN
-  | RCURL
+  | RSQPAR of (string)
+  | RPAR of (string)
+  | RETURN of (string)
+  | RCURL of (string)
   | RAWSTRING of (string)
-  | PRINTLN
-  | PRINT
-  | PPLUS
-  | PLUSEQ
-  | PLUS
-  | PEREQ
-  | PERCENT
-  | PACKAGE
-  | OR
+  | PRINTLN of (string)
+  | PRINT of (string)
+  | PPLUS of (string)
+  | PLUSEQ of (string)
+  | PLUS of (string)
+  | PEREQ of (string)
+  | PERCENT of (string)
+  | PACKAGE of (string)
+  | OR of (string)
   | OCTAL of (string)
-  | NOTEQ
-  | NOT
-  | MMINUS
-  | MINUS
-  | MINEQ
-  | LTMIN
-  | LTEQ
-  | LT
-  | LSQPAR
-  | LPAR
-  | LLTEQ
-  | LLT
-  | LCURL
+  | NOTEQ of (string)
+  | NOT of (string)
+  | MMINUS of (string)
+  | MINUS of (string)
+  | MINEQ of (string)
+  | LTMIN of (string)
+  | LTEQ of (string)
+  | LT of (string)
+  | LSQPAR of (string)
+  | LPAR of (string)
+  | LLTEQ of (string)
+  | LLT of (string)
+  | LCURL of (string)
   | INT of (string)
-  | IF
+  | IF of (string)
   | ID of (string)
   | HEXA of (string)
-  | HATEQ
-  | HAT
-  | GTEQ
-  | GT
-  | GGTEQ
-  | GGT
-  | FUNC
-  | FOR
+  | HATEQ of (string)
+  | HAT of (string)
+  | GTEQ of (string)
+  | GT of (string)
+  | GGTEQ of (string)
+  | GGT of (string)
+  | FUNC of (string)
+  | FOR of (string)
   | FLOAT of (string)
-  | EQUAL
-  | EOF
-  | ELSE
-  | EEQUAL
-  | DOT
-  | DEFAULT
-  | CONTINUE
-  | COMMA
-  | COLON
-  | COLEQ
-  | CASE
-  | BREAK
-  | AND
-  | AMPHATEQ
-  | AMPHAT
-  | AMPERSAND
+  | EQUAL of (string)
+  | EOF of (string)
+  | ELSE of (string)
+  | EEQUAL of (string)
+  | DOT of (string)
+  | DEFAULT of (string)
+  | CONTINUE of (string)
+  | COMMA of (string)
+  | COLON of (string)
+  | COLEQ of (string)
+  | CASE of (string)
+  | BREAK of (string)
+  | AND of (string)
+  | AMPHATEQ of (string)
+  | AMPHAT of (string)
+  | AMPERSAND of (string)
 
 
-val prog: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (int)
+val prog: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (ast)

@@ -1,2 +1,12 @@
 ### Starting build.
+# Target: main.ml.depends, tags: { extension:ml, file:main.ml, ocaml, ocamldep, quiet }
+/home/olivier/.opam/4.02.3/bin/ocamldep.opt -modules main.ml > main.ml.depends # cached
+# Target: parser.mli.depends, tags: { extension:mli, file:parser.mli, ocaml, ocamldep, quiet }
+/home/olivier/.opam/4.02.3/bin/ocamldep.opt -modules parser.mli > parser.mli.depends # cached
+# Target: parser.cmi, tags: { byte, compile, extension:mli, file:parser.mli, interf, ocaml, quiet }
+/home/olivier/.opam/4.02.3/bin/ocamlc.opt -c -o parser.cmi parser.mli
++ /home/olivier/.opam/4.02.3/bin/ocamlc.opt -c -o parser.cmi parser.mli
+File "parser.mli", line 77, characters 56-59:
+Error: Unbound type constructor ast
+Command exited with code 2.
 # Compilation unsuccessful.
