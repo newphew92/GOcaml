@@ -10,7 +10,6 @@
       | _ -> raise (ParserError "no type given in type declaration")
 %}
 
-(* Tokens *)
 %token <string> INT
 %token <string> OCTAL
 %token <string> HEXA
@@ -19,9 +18,9 @@
 %token <string> RAWSTRING
 %token <string> RUNESTRING
 %token <string> TYPE
-(* Unused but reserved tokens
+/* Unused but reserved tokens
  %token APPEND, CHAN, CONST, DEFER, DOTS, FALLTHROUGH
-%token GO, GOTO, IMPORT, INTERFACE, MAP, RANGE, SELECT *)
+%token GO, GOTO, IMPORT, INTERFACE, MAP, RANGE, SELECT */
 %token <string> AMPERSAND, AMPHAT, AMPHATEQ
 %token <string> AND, OR
 %token <string> BREAK
@@ -61,45 +60,45 @@
 %token <string> VERTICAL
 
 %token <string> ID
-(* Nodes type *)
-%type <ast> prog
+/* Nodes type */
+%type <Ast.ast> prog
 %type <string> packDec
-%type <dec> dec
-%type <dec> subDec
-%type <typeDec> typeDec
-%type <structFieldDec> fieldDec
-%type <typeCall> typeG
-%type <statement> stat
-%type <assignation> assign
-%type <assignee> assignee
-%type <statement> print
-%type <exp> exp
-%type <exp> primary
-%type <exp> type_cast
-%type <exp> constVal
-%type <exp> stringVal
-%type <statement> switchStat
-%type <clause> switchClause
-%type <statement> simpleStat
-%type <loopStat> forStat
+%type <Ast.dec> dec
+%type <Ast.dec> subDec
+%type <Ast.typeDec> typeDec
+%type <Ast.structFieldDec> fieldDec
+%type <Ast.typeCall> typeG
+%type <Ast.statement> stat
+%type <Ast.assignation> assign
+%type <Ast.assignee> assignee
+%type <Ast.statement> print
+%type <Ast.exp> exp
+%type <Ast.exp> primary
+%type <Ast.exp> type_cast
+%type <Ast.exp> constVal
+%type <Ast.exp> stringVal
+%type <Ast.statement> switchStat
+%type <Ast.clause> switchClause
+%type <Ast.statement> simpleStat
+%type <Ast.loopStat> forStat
 
 
 %start prog
 %%
 
-(* Rules *)
+/* Rules */
 prog:
-  | option(packDec) list(terminated(dec, SEMICOLON)) EOF {
+  | option(packDec) list(terminated(dec, SEMICOLON)) option(EOF) {
     {package=$1; declarations=$2}
   }
 
-packDec: (*only one package declaration allowed*)
+packDec: /*only one package declaration allowed*/
   | PACKAGE ID SEMICOLON  { $2 }
 
 dec:
   | VAR subDec { $2 }
   | VAR LPAR subDec_list_separated_semicolon RPAR { { theType=None; options=ListedVarD $3 } }
-  | FUNC ID LPAR id_list_with_types RPAR option(typeG) block { { theType=None; options=FunctionD ($2, $4, $6, $7) } } (* IN WEEDING CHECK THAT THIS IS NOT INSIDE A FUNC *)
+  | FUNC ID LPAR id_list_with_types RPAR option(typeG) block { { theType=None; options=FunctionD ($2, $4, $6, $7) } } /* IN WEEDING CHECK THAT THIS IS NOT INSIDE A FUNC */
   | typeDec { { theType=None; options=TypeD $1} }
 
 subDec_list_separated_semicolon:
@@ -133,14 +132,14 @@ stat_list:
    | stat { [$1] }
    | stat non_empty_stat_list { $1 :: $2 }
 
-typeG: (*basic types*)
+typeG: /*basic types*/
   | TYPE { { theType=None; options=BuiltInType $1 } }
-  | LSQPAR RSQPAR typeG { { theType=None; options=SliceType $3 } } (*slice*)
-  | LSQPAR exp RSQPAR typeG { { theType=None; options=ArrayType ($2, $4) } } (*array*)
+  | LSQPAR RSQPAR typeG { { theType=None; options=SliceType $3 } } /*slice*/
+  | LSQPAR exp RSQPAR typeG { { theType=None; options=ArrayType ($2, $4) } } /*array*/
   | ID { { theType=None; options=DeclaredType $1 } }
 
 stat:
-  | simpleStat SEMICOLON { $1 } (* Assign and expr *)
+  | simpleStat SEMICOLON { $1 } /* Assign and expr */
   | dec SEMICOLON { {theType=None; options= DeclareS $1} }
   | print SEMICOLON { $1 }
   | ifStat SEMICOLON { $1  }
@@ -166,14 +165,14 @@ assign:
   | incDec { $1 }
 
 assignee:
-  | primary { { theType=None; options=Object $1 } } (* TYPECHECKER WILL NEED TO GET SURE THIS IS AN ID *)
+  | primary { { theType=None; options=Object $1 } } /* TYPECHECKER WILL NEED TO GET SURE THIS IS AN ID */
 
 non_empty_assignee_list:
   | assignee { [$1] }
   | assignee COMMA non_empty_assignee_list { $1 :: $3 }
 
 incDec:
-  | assignee PPLUS { let x:assignation = { theType=None; options=Increment ($1, $2) } in x } (* equivalent to ID += 1 *)
+  | assignee PPLUS { let x:assignation = { theType=None; options=Increment ($1, $2) } in x } /* equivalent to ID += 1 */
   | assignee MMINUS { let x:assignation = { theType=None; options=Increment ($1, $2) } in x }
 
 print:
@@ -198,16 +197,16 @@ primary:
   | ID { { theType=None; options=ExpId $1 } }
   | constVal {$1}
   | type_cast {$1}
-  | FUNC LPAR id_list_with_types RPAR option(typeG) block { { theType=None; options=Lambda ($3, $5, $6) } } (* Function literal *)
-  | primary LSQPAR exp RSQPAR { { theType=None; options=ArrayElem ($1, $3) } } (* index element *)
-  | primary LSQPAR option(exp) COLON option(exp) RSQPAR { {theType=None; options=ArraySlice ($1, $3, $5) } } (* slices *)
-  | primary LPAR exp_list RPAR { { theType=None; options=FunctionCall ($1, $3) } } (* function call *)
-  | primary DOT ID { { theType=None; options=ObjectField ($1, $3) } } (* package.field or struct.field *)
+  | FUNC LPAR id_list_with_types RPAR option(typeG) block { { theType=None; options=Lambda ($3, $5, $6) } } /* Function literal */
+  | primary LSQPAR exp RSQPAR { { theType=None; options=ArrayElem ($1, $3) } } /* index element */
+  | primary LSQPAR option(exp) COLON option(exp) RSQPAR { {theType=None; options=ArraySlice ($1, $3, $5) } } /* slices */
+  | primary LPAR exp_list RPAR { { theType=None; options=FunctionCall ($1, $3) } } /* function call */
+  | primary DOT ID { { theType=None; options=ObjectField ($1, $3) } } /* package.field or struct.field */
 
 type_cast:
   | TYPE LPAR exp RPAR {
       let typeObject = { theType = None; options = (BuiltInType $1) } in
-      {theType=None; options=TypeCast (typeObject, $3)} } (*typecast only with Built-in types*)
+      {theType=None; options=TypeCast (typeObject, $3)} } /*typecast only with Built-in types*/
 
 non_empty_id_list:
   | ID { [$1] }
@@ -266,8 +265,8 @@ multOp:
   | AMPERSAND {$1}
   | AMPHAT {$1}
   | PERCENT {$1}
-  | LLT {$1} (*<<*)
-  | GGT {$1} (*>>*)
+  | LLT {$1} /*<<*/
+  | GGT {$1} /*>>*/
 unaryOp:
   | PLUS {$1}
   | MINUS {$1}

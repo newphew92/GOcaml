@@ -1,14 +1,44 @@
 ### Starting build.
-# Target: main.ml.depends, tags: { extension:ml, file:main.ml, ocaml, ocamldep, quiet }
-/home/olivier/.opam/4.02.3/bin/ocamldep.opt -modules main.ml > main.ml.depends # cached
-# Target: parser.mli.depends, tags: { extension:mli, file:parser.mli, ocaml, ocamldep, quiet }
-/home/olivier/.opam/4.02.3/bin/ocamldep.opt -modules parser.mli > parser.mli.depends # cached
-# Target: prettyPrint.ml.depends, tags: { extension:ml, file:prettyPrint.ml, ocaml, ocamldep, quiet }
-/home/olivier/.opam/4.02.3/bin/ocamldep.opt -modules prettyPrint.ml > prettyPrint.ml.depends # cached
-# Target: parser.cmi, tags: { byte, compile, extension:mli, file:parser.mli, interf, ocaml, quiet }
-/home/olivier/.opam/4.02.3/bin/ocamlc.opt -c -o parser.cmi parser.mli
-+ /home/olivier/.opam/4.02.3/bin/ocamlc.opt -c -o parser.cmi parser.mli
-File "parser.mli", line 77, characters 56-59:
-Error: Unbound type constructor ast
-Command exited with code 2.
-# Compilation unsuccessful.
+# Target: main.ml.depends, tags: { debug, extension:ml, file:main.ml, ocaml, ocamldep, package(core,ppx_jane), package(str), quiet, thread, traverse }
+ocamlfind ocamldep -package core,ppx_jane -package str -modules main.ml > main.ml.depends # cached
+# Target: lex.ml.depends, tags: { debug, extension:ml, file:lex.ml, ocaml, ocamldep, package(core,ppx_jane), package(str), quiet, thread, traverse }
+ocamlfind ocamldep -package core,ppx_jane -package str -modules lex.ml > lex.ml.depends # cached
+# Target: scanner.mly.depends, tags: { debug, extension:mly, file:scanner.mly, infer, menhir_ocamldep, ocaml, ocamldep, package(core,ppx_jane), package(str), quiet, thread, traverse }
+menhir --raw-depend --ocamldep 'ocamlfind ocamldep -modules' scanner.mly > scanner.mly.depends # cached
+# Target: scanner.mly, tags: { byte, compile, debug, extension:ml, extension:mly, file:scanner.ml, file:scanner.mly, infer, menhir, ocaml, package(core,ppx_jane), package(str), parser, quiet, thread, traverse }
+menhir --ocamlc 'ocamlfind ocamlc -g -thread -package core,ppx_jane -package str' --infer scanner.mly # cached
+# Target: scanner.mli.depends, tags: { debug, extension:mli, file:scanner.mli, ocaml, ocamldep, package(core,ppx_jane), package(str), quiet, thread, traverse }
+ocamlfind ocamldep -package core,ppx_jane -package str -modules scanner.mli > scanner.mli.depends # cached
+# Target: scanner.cmi, tags: { byte, compile, debug, extension:mli, file:scanner.mli, interf, ocaml, package(core,ppx_jane), package(str), quiet, thread, traverse }
+ocamlfind ocamlc -c -g -thread -package core,ppx_jane -package str -o scanner.cmi scanner.mli # cached
+# Target: lex.cmo, tags: { byte, compile, debug, extension:cmo, extension:ml, file:lex.cmo, file:lex.ml, implem, ocaml, package(core,ppx_jane), package(str), quiet, thread, traverse }
+ocamlfind ocamlc -c -g -thread -package core,ppx_jane -package str -o lex.cmo lex.ml # cached
+# Target: prettyPrint.ml.depends, tags: { debug, extension:ml, file:prettyPrint.ml, ocaml, ocamldep, package(core,ppx_jane), package(str), quiet, thread, traverse }
+ocamlfind ocamldep -package core,ppx_jane -package str -modules prettyPrint.ml > prettyPrint.ml.depends # cached
+# Target: prettyPrint.cmo, tags: { byte, compile, debug, extension:cmo, extension:ml, file:prettyPrint.cmo, file:prettyPrint.ml, implem, ocaml, package(core,ppx_jane), package(str), quiet, thread, traverse }
+ocamlfind ocamlc -c -g -thread -package core,ppx_jane -package str -o prettyPrint.cmo prettyPrint.ml # cached
+# Target: weeder.ml.depends, tags: { debug, extension:ml, file:weeder.ml, ocaml, ocamldep, package(core,ppx_jane), package(str), quiet, thread, traverse }
+ocamlfind ocamldep -package core,ppx_jane -package str -modules weeder.ml > weeder.ml.depends # cached
+# Target: weeder.cmo, tags: { byte, compile, debug, extension:cmo, extension:ml, file:weeder.cmo, file:weeder.ml, implem, ocaml, package(core,ppx_jane), package(str), quiet, thread, traverse }
+ocamlfind ocamlc -c -g -thread -package core,ppx_jane -package str -o weeder.cmo weeder.ml # cached
+# Target: main.cmo, tags: { byte, compile, debug, extension:cmo, extension:ml, file:main.cmo, file:main.ml, implem, ocaml, package(core,ppx_jane), package(str), quiet, thread, traverse }
+ocamlfind ocamlc -c -g -thread -package core,ppx_jane -package str -o main.cmo main.ml # cached
+# Target: ast.ml.depends, tags: { debug, extension:ml, file:ast.ml, ocaml, ocamldep, package(core,ppx_jane), package(str), quiet, thread, traverse }
+ocamlfind ocamldep -package core,ppx_jane -package str -modules ast.ml > ast.ml.depends # cached
+# Target: ast.cmx, tags: { compile, debug, extension:cmx, extension:ml, file:ast.cmx, file:ast.ml, implem, native, ocaml, package(core,ppx_jane), package(str), quiet, thread, traverse }
+ocamlfind ocamlopt -c -g -thread -package core,ppx_jane -package str -o ast.cmx ast.ml # cached
+# Target: scanner.ml.depends, tags: { debug, extension:ml, file:scanner.ml, ocaml, ocamldep, package(core,ppx_jane), package(str), quiet, thread, traverse }
+ocamlfind ocamldep -package core,ppx_jane -package str -modules scanner.ml > scanner.ml.depends # cached
+# Target: scanner.cmx, tags: { compile, debug, extension:cmx, extension:ml, file:scanner.cmx, file:scanner.ml, implem, native, ocaml, package(core,ppx_jane), package(str), quiet, thread, traverse }
+ocamlfind ocamlopt -c -g -thread -package core,ppx_jane -package str -o scanner.cmx scanner.ml # cached
+# Target: lex.cmx, tags: { compile, debug, extension:cmx, extension:ml, file:lex.cmx, file:lex.ml, implem, native, ocaml, package(core,ppx_jane), package(str), quiet, thread, traverse }
+ocamlfind ocamlopt -c -g -thread -package core,ppx_jane -package str -o lex.cmx lex.ml # cached
+# Target: prettyPrint.cmx, tags: { compile, debug, extension:cmx, extension:ml, file:prettyPrint.cmx, file:prettyPrint.ml, implem, native, ocaml, package(core,ppx_jane), package(str), quiet, thread, traverse }
+ocamlfind ocamlopt -c -g -thread -package core,ppx_jane -package str -o prettyPrint.cmx prettyPrint.ml # cached
+# Target: weeder.cmx, tags: { compile, debug, extension:cmx, extension:ml, file:weeder.cmx, file:weeder.ml, implem, native, ocaml, package(core,ppx_jane), package(str), quiet, thread, traverse }
+ocamlfind ocamlopt -c -g -thread -package core,ppx_jane -package str -o weeder.cmx weeder.ml # cached
+# Target: main.cmx, tags: { compile, debug, extension:cmx, extension:ml, file:main.cmx, file:main.ml, implem, native, ocaml, package(core,ppx_jane), package(str), quiet, thread, traverse }
+ocamlfind ocamlopt -c -g -thread -package core,ppx_jane -package str -o main.cmx main.ml # cached
+# Target: main.native, tags: { debug, dont_link_with, extension:native, file:main.native, link, native, ocaml, package(core,ppx_jane), package(str), program, quiet, thread, traverse }
+ocamlfind ocamlopt -linkpkg -g -thread -package core,ppx_jane -package str ast.cmx scanner.cmx lex.cmx prettyPrint.cmx weeder.cmx main.cmx -o main.native # cached
+# Compilation successful.

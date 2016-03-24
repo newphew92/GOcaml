@@ -1,8 +1,7 @@
 package main
 
-import "fmt"
 type num float64
-var a,b,c ,d int = 1,2,3,4
+var a,b,c,d int = 1,2,3,4
  func fib() func() int {
 	a, b := 00, 01
 	fmt.Println(a,b)

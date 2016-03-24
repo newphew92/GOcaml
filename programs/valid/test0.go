@@ -2,7 +2,6 @@
 // Click here and start typing.
 package main
 
-import "fmt"
 type num int
 func main() {
 	var a num = 1;
