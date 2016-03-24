@@ -1,4 +1,5 @@
-exception Error
+
+(* The type of tokens. *)
 
 type token = 
   | VERTICAL of (string)
@@ -73,5 +74,10 @@ type token =
   | AMPHAT of (string)
   | AMPERSAND of (string)
 
+(* This exception is raised by the monolithic API functions. *)
 
-val prog: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (ast)
+exception Error
+
+(* The monolithic API. *)
+
+val prog: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Ast.ast)

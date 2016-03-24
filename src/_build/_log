@@ -1,12 +1,65 @@
 ### Starting build.
-# Target: main.ml.depends, tags: { extension:ml, file:main.ml, ocaml, ocamldep, quiet }
-/home/olivier/.opam/4.02.3/bin/ocamldep.opt -modules main.ml > main.ml.depends # cached
-# Target: parser.mli.depends, tags: { extension:mli, file:parser.mli, ocaml, ocamldep, quiet }
-/home/olivier/.opam/4.02.3/bin/ocamldep.opt -modules parser.mli > parser.mli.depends # cached
-# Target: parser.cmi, tags: { byte, compile, extension:mli, file:parser.mli, interf, ocaml, quiet }
-/home/olivier/.opam/4.02.3/bin/ocamlc.opt -c -o parser.cmi parser.mli
-+ /home/olivier/.opam/4.02.3/bin/ocamlc.opt -c -o parser.cmi parser.mli
-File "parser.mli", line 77, characters 56-59:
-Error: Unbound type constructor ast
-Command exited with code 2.
-# Compilation unsuccessful.
+# Target: main.ml.depends, tags: { extension:ml, file:main.ml, ocaml, ocamldep, package(str), quiet }
+ocamlfind ocamldep -package str -modules main.ml > main.ml.depends
+# Target: parser.mli.depends, tags: { extension:mli, file:parser.mli, ocaml, ocamldep, package(str), quiet }
+ocamlfind ocamldep -package str -modules parser.mli > parser.mli.depends
+# Target: prettyPrint.ml.depends, tags: { extension:ml, file:prettyPrint.ml, ocaml, ocamldep, package(str), quiet }
+ocamlfind ocamldep -package str -modules prettyPrint.ml > prettyPrint.ml.depends
+# Target: parser.cmi, tags: { byte, compile, extension:mli, file:parser.mli, interf, ocaml, package(str), quiet }
+ocamlfind ocamlc -c -package str -o parser.cmi parser.mli
+# Target: prettyPrint.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:prettyPrint.cmo, file:prettyPrint.ml, implem, ocaml, package(str), quiet }
+ocamlfind ocamlc -c -package str -o prettyPrint.cmo prettyPrint.ml
+# Target: main.cmo, tags: { byte, compile, extension:cmo, extension:ml, file:main.cmo, file:main.ml, implem, ocaml, package(str), quiet }
+ocamlfind ocamlc -c -package str -o main.cmo main.ml
+# Target: ast.ml.depends, tags: { extension:ml, file:ast.ml, ocaml, ocamldep, package(str), quiet }
+ocamlfind ocamldep -package str -modules ast.ml > ast.ml.depends
+# Target: parser.ml.depends, tags: { extension:ml, file:parser.ml, ocaml, ocamldep, package(str), quiet }
+ocamlfind ocamldep -package str -modules parser.ml > parser.ml.depends
+# Target: ast.cmx, tags: { compile, extension:cmx, extension:ml, file:ast.cmx, file:ast.ml, implem, native, ocaml, package(str), quiet }
+ocamlfind ocamlopt -c -package str -o ast.cmx ast.ml
++ ocamlfind ocamlopt -c -package str -o ast.cmx ast.ml
+File "ast.ml", line 10, characters 2-25:
+Warning 30: the label theType is defined in both types statement and dec.
+File "ast.ml", line 11, characters 2-22:
+Warning 30: the label options is defined in both types statement and dec.
+File "ast.ml", line 14, characters 2-25:
+Warning 30: the label theType is defined in both types statement and structFieldDec.
+File "ast.ml", line 15, characters 2-33:
+Warning 30: the label options is defined in both types statement and structFieldDec.
+File "ast.ml", line 18, characters 2-25:
+Warning 30: the label theType is defined in both types statement and typeDec.
+File "ast.ml", line 19, characters 2-26:
+Warning 30: the label options is defined in both types statement and typeDec.
+File "ast.ml", line 22, characters 2-25:
+Warning 30: the label theType is defined in both types statement and loopStat.
+File "ast.ml", line 23, characters 2-27:
+Warning 30: the label options is defined in both types statement and loopStat.
+File "ast.ml", line 26, characters 2-25:
+Warning 30: the label theType is defined in both types statement and clause.
+File "ast.ml", line 27, characters 2-25:
+Warning 30: the label options is defined in both types statement and clause.
+File "ast.ml", line 30, characters 2-25:
+Warning 30: the label theType is defined in both types statement and assignation.
+File "ast.ml", line 31, characters 2-30:
+Warning 30: the label options is defined in both types statement and assignation.
+File "ast.ml", line 34, characters 2-25:
+Warning 30: the label theType is defined in both types statement and assignee.
+File "ast.ml", line 35, characters 2-27:
+Warning 30: the label options is defined in both types statement and assignee.
+File "ast.ml", line 38, characters 2-25:
+Warning 30: the label theType is defined in both types statement and exp.
+File "ast.ml", line 39, characters 2-22:
+Warning 30: the label options is defined in both types statement and exp.
+File "ast.ml", line 42, characters 2-25:
+Warning 30: the label theType is defined in both types statement and typeCall.
+File "ast.ml", line 43, characters 2-27:
+Warning 30: the label options is defined in both types statement and typeCall.
+# Target: parser.cmx, tags: { compile, extension:cmx, extension:ml, file:parser.cmx, file:parser.ml, implem, native, ocaml, package(str), quiet }
+ocamlfind ocamlopt -c -package str -o parser.cmx parser.ml
+# Target: prettyPrint.cmx, tags: { compile, extension:cmx, extension:ml, file:prettyPrint.cmx, file:prettyPrint.ml, implem, native, ocaml, package(str), quiet }
+ocamlfind ocamlopt -c -package str -o prettyPrint.cmx prettyPrint.ml
+# Target: main.cmx, tags: { compile, extension:cmx, extension:ml, file:main.cmx, file:main.ml, implem, native, ocaml, package(str), quiet }
+ocamlfind ocamlopt -c -package str -o main.cmx main.ml
+# Target: main.native, tags: { dont_link_with, extension:native, file:main.native, link, native, ocaml, package(str), program, quiet }
+ocamlfind ocamlopt -linkpkg -package str ast.cmx parser.cmx prettyPrint.cmx main.cmx -o main.native
+# Compilation successful.
