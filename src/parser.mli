@@ -80,4 +80,4 @@ exception Error
 
 (* The monolithic API. *)
 
-val prog: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (ast)
+val prog: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Ast.ast)
