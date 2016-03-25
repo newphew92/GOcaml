@@ -1,18 +1,19 @@
 package main
 
-import "fmt"
-
 var test bool
-testy:=true
 
-func main() {
-	type num int         // simple type alias
-	type point struct {  // point is a struct
-	x, y float64
-	}
-	f := fib()
+type num int         // simple type alias
+type point struct {  // point is a struct
+x, y float64
+}
+
+func main () {
+	f := fib
 	// Function calls are evaluated left-to-right.
-	fmt.Println(f(), f(), f(), f(), f())
-
+	println(f(), f(), f(), f(), f())
 	print (2+2)
+}
+
+func fib () {
+	return 1
 }
