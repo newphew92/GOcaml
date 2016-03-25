@@ -150,7 +150,7 @@ and weedStatement (stat:statement) inLoop inFuncBlock =
         options=PrintlnS (List.map (fun x -> (weedExp x inLoop inFuncBlock) ) el)
       }
     (* eo: exp option *)
-    | ReturnS eo -> if not inFuncBlock then
+    | ReturnS eo -> if inFuncBlock then
       { theType=t;
         options = ReturnS (weedOptionalExp eo inLoop inFuncBlock)
       }
