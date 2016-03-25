@@ -6,7 +6,7 @@ type num int
 func main() {
 	var a num = 1;
 	i:=2
-	fmt.Println("Hello, playground",a)
+	println("Hello, playground",a)
 	for i+=2;
 	i<10;
 	i++{
@@ -17,7 +17,7 @@ func main() {
 }
 }
 func f(a,b,c int,e,f string){
-fmt.Println(a,b,c,e,f)
+println(a,b,c,e,f)
 
 
 }
