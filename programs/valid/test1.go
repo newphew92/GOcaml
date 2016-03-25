@@ -2,21 +2,19 @@ package main
 
 type num float64
 var a,b,c,d int = 1,2,3,4
- func fib() func() int {
+ func fib() int {
 	a, b := 00, 01
-	fmt.Println(a,b)
+	println(a,b)
 	return func() int {
 		var d = -1;
-		fmt.Println(d)
+		println(d)
 		var a num = 1;
 		i:=2
-		fmt.Println("Hello, playground",a)
-		for i+=2;
-		i<10;
-		i++{
 
-		z :=0;
-		z+=2;
+    i := 0
+		for i+=2; i<10; i++{
+		z := 0;
+		z += 2;
 
 		}
 		return 3

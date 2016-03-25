@@ -11,14 +11,19 @@ let decreaseIndent () =
     | hd::tl -> indent := tl
     | _ -> raise (PrettyPrintError "cannot decrease empty indentation")
 let printIndent () = concat " " !indent
-(* PRETTY PRINTER *)
+(* PRETTY PRINTER
+*)
+let printTheType (theType:string option) =
+  match theType with
+    | None -> []
+    | Some t -> ["/* type: " ^ t ^ " */"]
 
 let rec pprintProg ast =
   concat " " ((pprintPackage ast.package) @ (pprintDecList ast.declarations))
 
 and pprintPackage pack =
   match pack with
-    | Some p -> "package"::p::[";"]
+    | Some p -> "package"::p::[";\n"]
     | None -> []
 
 (* decList: dec list *)
@@ -52,7 +57,8 @@ and pprintTypeDec (typeDec:typeDec) =
     | Simple strAndTypeList ->
       "("::(pprintTypeAliasList strAndTypeList) @ [")"]
     | StructD (name, fieldsList) ->
-      name::"struct {\n"::(pprintStructFieldDecList fieldsList) @ ["}\n"]
+      name::"struct {\n"::(pprintStructFieldDecList fieldsList) @
+      (printIndent()::["}\n"])
 
 and pprintOptionalExp (expOp: exp option) =
   match expOp with
@@ -112,22 +118,22 @@ and pprintExp (exp:exp) =
     | StringConst s -> [s]
     | RawStringConst s -> [s]
     | RuneConst s -> [s]
-    | ExpId s -> [s]
+    | ExpId s -> [s] @ (printTheType exp.theType)
     | BinaryOp (e1, op, e2) ->
       (pprintExp e1) @ [op] @ (pprintExp e2)
     | UnaryOp (op, e) ->
       op::(pprintExp e)
     | ArrayElem (e, indice) ->
-      (pprintExp e) @ ["["] @ (pprintExp indice) @ ["]"]
+      (pprintExp e) @ ["["] @ (pprintExp indice) @ ["]"] @ (printTheType exp.theType)
     | ArraySlice (exp, fstIndOp, sndIndOp) ->
       (pprintExp exp) @ ["["] @
       (pprintOptionalExp fstIndOp) @
-      [":"] @ (pprintOptionalExp sndIndOp) @ ["]"]
+      [":"] @ (pprintOptionalExp sndIndOp) @ ["]"] @ (printTheType exp.theType)
     | ObjectField (objExp, field) ->
-      (pprintExp objExp) @ ["."] @ [field]
+      (pprintExp objExp) @ ["."] @ [field] @ (printTheType exp.theType)
     (* FunctionCall of exp * exp list *)
     | FunctionCall (func, args) ->
-      (pprintExp func) @ ["("] @ (pprintSeparatedExpList args ",") @ [")"]
+      (pprintExp func) @ ["("] @ (pprintSeparatedExpList args ",") @ [")"] @ (printTheType exp.theType)
     (* Lambda of (string * typeCall option) list * typeCall option * statement list *)
     | Lambda (args, opFuncType, statList) ->
       "("::(pprintArgs args) @ [")"] @
@@ -192,15 +198,23 @@ and pprintClauseList (clauses: clause list) =
     | [] -> []
 
 and pprintClause (clause:clause) =
-  match clause.options with
-    | OptionSw (condList, statList) ->
-      "case"::(pprintSeparatedExpList condList ",") @ ["\n"] @
-      (pprintIndentedStatList statList)
-    | DefaultSw statList ->
-      "default:\n"::(pprintIndentedStatList statList)
+  let x =
+    increaseIndent();
+    printIndent()::
+    match clause.options with
+      | OptionSw (condList, statList) ->
+        "case"::(pprintSeparatedExpList condList ",") @ [":\n"] @
+        (pprintIndentedStatList statList)
+      | DefaultSw statList ->
+        "default:\n"::(pprintIndentedStatList statList)
+    in
+      decreaseIndent();
+      x
 
 and pprintTypeAliasList aliasList =
   match aliasList with
+    | (alias, typeC)::[] ->
+      alias::(pprintTypeCall typeC)
     | (alias, typeC)::tl ->
       alias::(pprintTypeCall typeC) @ [";"] @
       pprintTypeAliasList tl
@@ -215,7 +229,11 @@ and pprintStructFieldDec (fields:structFieldDec) =
   match fields.options with
     (* FieldsBunch of string list * typeCall *)
     | FieldsBunch (names, typeC) ->
-      (concat ", " names) :: (pprintTypeCall typeC) @ [";\n"]
+      let x =
+      increaseIndent();
+      printIndent()::(concat ", " names) :: (pprintTypeCall typeC) @ [";\n"]
+      in
+      decreaseIndent(); x
 
 and pprintAssignation (assign:assignation) =
   match assign.options with
@@ -246,5 +264,14 @@ and pprintSeparatedAssigneeList (assignees:assignee list) separator =
 let replace input output =
     Str.global_replace (Str.regexp_string input) output
 
+let rec replaceMany fromList toList str =
+  (* very costly, let's hope it's temporary *)
+  match fromList, toList with
+    | (hd1::tl1), (hd2::tl2) ->
+      replace hd1 hd2 (replaceMany tl1 tl2 str)
+    | _ -> str
+
 let prettyPrint ast =
-  replace ";;" ";" (replace "\n " "\n" (pprintProg ast))
+  let fromList =  ["}"; "\n\n}"; "\t "; "\n;"; "( )"; " ;"; " ,"; ". "; " ."; ";;"; "\n "] in
+  let toList = ["\n}"; "\n}"; "\t"; ";"; "()"; ";"; ","; "."; "."; ";"; "\n"] in
+  replaceMany fromList toList (pprintProg ast)

@@ -88,7 +88,7 @@
 
 /* Rules */
 prog:
-  | option(packDec) list(terminated(dec, SEMICOLON)) option(EOF) {
+  | option(packDec) list(terminated(dec, SEMICOLON)) EOF {
     {package=$1; declarations=$2}
   }
 
@@ -129,6 +129,7 @@ stat_list:
  | non_empty_stat_list { $1 }
 
  non_empty_stat_list:
+   | SEMICOLON stat_list { $2 } (* very cornery case to allow empty statements *)
    | stat { [$1] }
    | stat non_empty_stat_list { $1 :: $2 }
 
@@ -176,8 +177,8 @@ incDec:
   | assignee MMINUS { let x:assignation = { theType=None; options=Increment ($1, $2) } in x }
 
 print:
-  | PRINT LPAR exp_list RPAR SEMICOLON { { theType=None; options=PrintS $3 } }
-  | PRINTLN LPAR exp_list RPAR SEMICOLON { { theType=None; options=PrintlnS $3 } }
+  | PRINT LPAR exp_list RPAR { { theType=None; options=PrintS $3 } }
+  | PRINTLN LPAR exp_list RPAR { { theType=None; options=PrintlnS $3 } }
 
 exp:
   | exp logicOp factor { { theType=None; options=BinaryOp ($1, $2, $3) } }
@@ -300,13 +301,13 @@ ifStat:
 elseStat:
   | { [] }
   | ELSE ifStat { [$2] }
-  | ELSE block SEMICOLON { $2 }
+  | ELSE block { $2 }
 
 simpleStat:
-  | exp SEMICOLON { let x:statement = { theType=None; options=(ExpS $1) } in x }
-  | assign SEMICOLON { let x:statement = { theType=None; options=(AssignS $1) }in x }
+  | exp { let x:statement = { theType=None; options=(ExpS $1) } in x }
+  | assign { let x:statement = { theType=None; options=(AssignS $1) }in x }
 
 forStat:
-  | FOR block SEMICOLON { { theType=None; options=InfLoop $2 } }
-  | FOR exp block SEMICOLON { { theType=None; options=While ($2, $3) } }
-  | FOR assign SEMICOLON exp SEMICOLON incDec block SEMICOLON { { theType=None; options=For ($2, $4, $6, $7) } }
+  | FOR block { { theType=None; options=InfLoop $2 } }
+  | FOR exp block { { theType=None; options=While ($2, $3) } }
+  | FOR assign SEMICOLON exp SEMICOLON incDec block { { theType=None; options=For ($2, $4, $6, $7) } }

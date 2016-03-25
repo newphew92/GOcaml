@@ -12,8 +12,16 @@
   exception UnusedToken of string
 
   (* for debug *)
-  let debug_flag = ref true
-  let dprint str = if !debug_flag then print_endline str else ()
+  let debug_flag = ref false
+  let dprint str =
+    if !debug_flag then
+      if (compare str "\n") = 0 then
+        print_string "\n"
+      else if (compare str "eof") = 0 then
+        print_string ("[" ^ str ^ "]" ^ "\n")
+      else
+        print_string ("[" ^ str ^ "]" ^ " ")
+    else ()
 
 
   (* Flag for semicolon insertion *)
@@ -29,7 +37,7 @@
 
   (* End Header *)
 
-# 33 "lex.ml"
+# 41 "lex.ml"
 let __ocaml_lex_tables = {
   Lexing.lex_base = 
    "\000\000\169\255\081\000\160\000\238\000\060\001\138\001\216\001\
@@ -65,7 +73,7 @@ let __ocaml_lex_tables = {
     \255\255\255\255\255\255\043\000\042\000\056\000\041\000\040\000\
     \019\000\018\000\017\000\016\000\014\000\013\000\012\000\085\000\
     \085\000\085\000\085\000\085\000\255\255\255\255\255\255\055\000\
-    \255\255\004\000\015\000\255\255\255\255\000\000\255\255\255\255\
+    \004\000\004\000\015\000\255\255\255\255\000\000\255\255\255\255\
     \003\000\255\255\003\000\007\000\255\255\005\000\006\000\255\255\
     \007\000\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \085\000\071\000\085\000\011\000\085\000\085\000\085\000\085\000\
@@ -2992,452 +3000,456 @@ let rec read lexbuf =
 and __ocaml_lex_read_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 82 "lex.mll"
+# 90 "lex.mll"
                     ( read lexbuf )
-# 2998 "lex.ml"
+# 3006 "lex.ml"
 
   | 1 ->
-# 83 "lex.mll"
+# 91 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  SEMICOLON (Lexing.lexeme lexbuf))
-# 3003 "lex.ml"
+# 3011 "lex.ml"
 
   | 2 ->
-# 84 "lex.mll"
-                    ( semiFlagDown();  if !insSemi
-                      then
-                        let () =
-                        dprint ("inserted: " ^ Lexing.lexeme lexbuf) in
-                        SEMICOLON (Lexing.lexeme lexbuf)
-                      else (read lexbuf))
-# 3013 "lex.ml"
+# 92 "lex.mll"
+                    ( match !insSemi with
+                        | true ->
+                          semiFlagDown();
+                          dprint ("inserted semicolon");
+                          dprint ("\n");
+                          SEMICOLON (Lexing.lexeme lexbuf)
+                        | false ->
+                          dprint ("\n");
+                          read lexbuf
+                    )
+# 3025 "lex.ml"
 
   | 3 ->
-# 90 "lex.mll"
+# 102 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); read lexbuf )
-# 3018 "lex.ml"
+# 3030 "lex.ml"
 
   | 4 ->
-# 91 "lex.mll"
+# 103 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagUp();  INT (Lexing.lexeme lexbuf) )
-# 3023 "lex.ml"
+# 3035 "lex.ml"
 
   | 5 ->
-# 92 "lex.mll"
+# 104 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagUp();  OCTAL (Lexing.lexeme lexbuf) )
-# 3028 "lex.ml"
+# 3040 "lex.ml"
 
   | 6 ->
-# 93 "lex.mll"
+# 105 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagUp();  HEXA (Lexing.lexeme lexbuf) )
-# 3033 "lex.ml"
+# 3045 "lex.ml"
 
   | 7 ->
-# 94 "lex.mll"
+# 106 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagUp();  FLOAT (Lexing.lexeme lexbuf) )
-# 3038 "lex.ml"
+# 3050 "lex.ml"
 
   | 8 ->
-# 95 "lex.mll"
+# 107 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagUp();  STRING (Lexing.lexeme lexbuf) )
-# 3043 "lex.ml"
+# 3055 "lex.ml"
 
   | 9 ->
-# 96 "lex.mll"
+# 108 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagUp();  RAWSTRING (Lexing.lexeme lexbuf) )
-# 3048 "lex.ml"
+# 3060 "lex.ml"
 
   | 10 ->
-# 97 "lex.mll"
+# 109 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagUp();  RUNESTRING (Lexing.lexeme lexbuf) )
-# 3053 "lex.ml"
+# 3065 "lex.ml"
 
   | 11 ->
-# 98 "lex.mll"
-                    ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  TYPE (Lexing.lexeme lexbuf) )
-# 3058 "lex.ml"
+# 110 "lex.mll"
+                    ( dprint ("type: " ^ Lexing.lexeme lexbuf); semiFlagUp();  TYPE (Lexing.lexeme lexbuf) )
+# 3070 "lex.ml"
 
   | 12 ->
-# 99 "lex.mll"
+# 111 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  PLUS (Lexing.lexeme lexbuf) )
-# 3063 "lex.ml"
+# 3075 "lex.ml"
 
   | 13 ->
-# 100 "lex.mll"
+# 112 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  MINUS (Lexing.lexeme lexbuf) )
-# 3068 "lex.ml"
+# 3080 "lex.ml"
 
   | 14 ->
-# 101 "lex.mll"
+# 113 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  STAR (Lexing.lexeme lexbuf) )
-# 3073 "lex.ml"
+# 3085 "lex.ml"
 
   | 15 ->
-# 102 "lex.mll"
+# 114 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  SLASH (Lexing.lexeme lexbuf) )
-# 3078 "lex.ml"
+# 3090 "lex.ml"
 
   | 16 ->
-# 103 "lex.mll"
+# 115 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  PERCENT (Lexing.lexeme lexbuf) )
-# 3083 "lex.ml"
+# 3095 "lex.ml"
 
   | 17 ->
-# 104 "lex.mll"
+# 116 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  AMPERSAND (Lexing.lexeme lexbuf) )
-# 3088 "lex.ml"
+# 3100 "lex.ml"
 
   | 18 ->
-# 105 "lex.mll"
+# 117 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  VERTICAL (Lexing.lexeme lexbuf) )
-# 3093 "lex.ml"
+# 3105 "lex.ml"
 
   | 19 ->
-# 106 "lex.mll"
+# 118 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  HAT (Lexing.lexeme lexbuf) )
-# 3098 "lex.ml"
+# 3110 "lex.ml"
 
   | 20 ->
-# 107 "lex.mll"
+# 119 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  LLT (Lexing.lexeme lexbuf) )
-# 3103 "lex.ml"
+# 3115 "lex.ml"
 
   | 21 ->
-# 108 "lex.mll"
+# 120 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  GGT (Lexing.lexeme lexbuf) )
-# 3108 "lex.ml"
+# 3120 "lex.ml"
 
   | 22 ->
-# 109 "lex.mll"
+# 121 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  AMPHAT (Lexing.lexeme lexbuf) )
-# 3113 "lex.ml"
+# 3125 "lex.ml"
 
   | 23 ->
-# 110 "lex.mll"
+# 122 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  PLUSEQ (Lexing.lexeme lexbuf) )
-# 3118 "lex.ml"
+# 3130 "lex.ml"
 
   | 24 ->
-# 111 "lex.mll"
+# 123 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  MINEQ (Lexing.lexeme lexbuf) )
-# 3123 "lex.ml"
+# 3135 "lex.ml"
 
   | 25 ->
-# 112 "lex.mll"
+# 124 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  STAREQ (Lexing.lexeme lexbuf) )
-# 3128 "lex.ml"
+# 3140 "lex.ml"
 
   | 26 ->
-# 113 "lex.mll"
+# 125 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  SLASHEQ (Lexing.lexeme lexbuf) )
-# 3133 "lex.ml"
+# 3145 "lex.ml"
 
   | 27 ->
-# 114 "lex.mll"
+# 126 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  PEREQ (Lexing.lexeme lexbuf) )
-# 3138 "lex.ml"
+# 3150 "lex.ml"
 
   | 28 ->
-# 115 "lex.mll"
+# 127 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  VERTEQ (Lexing.lexeme lexbuf) )
-# 3143 "lex.ml"
+# 3155 "lex.ml"
 
   | 29 ->
-# 116 "lex.mll"
+# 128 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  HATEQ (Lexing.lexeme lexbuf) )
-# 3148 "lex.ml"
+# 3160 "lex.ml"
 
   | 30 ->
-# 117 "lex.mll"
+# 129 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  LLTEQ (Lexing.lexeme lexbuf) )
-# 3153 "lex.ml"
+# 3165 "lex.ml"
 
   | 31 ->
-# 118 "lex.mll"
+# 130 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  GGTEQ (Lexing.lexeme lexbuf) )
-# 3158 "lex.ml"
+# 3170 "lex.ml"
 
   | 32 ->
-# 119 "lex.mll"
+# 131 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  COLEQ (Lexing.lexeme lexbuf) )
-# 3163 "lex.ml"
+# 3175 "lex.ml"
 
   | 33 ->
-# 120 "lex.mll"
+# 132 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  AMPHATEQ (Lexing.lexeme lexbuf) )
-# 3168 "lex.ml"
+# 3180 "lex.ml"
 
   | 34 ->
-# 121 "lex.mll"
+# 133 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  AND (Lexing.lexeme lexbuf) )
-# 3173 "lex.ml"
+# 3185 "lex.ml"
 
   | 35 ->
-# 122 "lex.mll"
+# 134 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf);  semiFlagDown(); OR (Lexing.lexeme lexbuf) )
-# 3178 "lex.ml"
+# 3190 "lex.ml"
 
   | 36 ->
-# 123 "lex.mll"
+# 135 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  LTMIN (Lexing.lexeme lexbuf) )
-# 3183 "lex.ml"
+# 3195 "lex.ml"
 
   | 37 ->
-# 124 "lex.mll"
+# 136 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagUp();  PPLUS (Lexing.lexeme lexbuf) )
-# 3188 "lex.ml"
+# 3200 "lex.ml"
 
   | 38 ->
-# 125 "lex.mll"
+# 137 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagUp();  MMINUS (Lexing.lexeme lexbuf) )
-# 3193 "lex.ml"
+# 3205 "lex.ml"
 
   | 39 ->
-# 126 "lex.mll"
+# 138 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  EEQUAL (Lexing.lexeme lexbuf) )
-# 3198 "lex.ml"
+# 3210 "lex.ml"
 
   | 40 ->
-# 127 "lex.mll"
+# 139 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  LT (Lexing.lexeme lexbuf) )
-# 3203 "lex.ml"
+# 3215 "lex.ml"
 
   | 41 ->
-# 128 "lex.mll"
+# 140 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  GT (Lexing.lexeme lexbuf) )
-# 3208 "lex.ml"
+# 3220 "lex.ml"
 
   | 42 ->
-# 129 "lex.mll"
+# 141 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  EQUAL (Lexing.lexeme lexbuf) )
-# 3213 "lex.ml"
+# 3225 "lex.ml"
 
   | 43 ->
-# 130 "lex.mll"
+# 142 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  NOT (Lexing.lexeme lexbuf) )
-# 3218 "lex.ml"
+# 3230 "lex.ml"
 
   | 44 ->
-# 131 "lex.mll"
+# 143 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  NOTEQ (Lexing.lexeme lexbuf))
-# 3223 "lex.ml"
+# 3235 "lex.ml"
 
   | 45 ->
-# 132 "lex.mll"
+# 144 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  LTEQ (Lexing.lexeme lexbuf) )
-# 3228 "lex.ml"
+# 3240 "lex.ml"
 
   | 46 ->
-# 133 "lex.mll"
+# 145 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  GTEQ (Lexing.lexeme lexbuf) )
-# 3233 "lex.ml"
+# 3245 "lex.ml"
 
   | 47 ->
-# 134 "lex.mll"
+# 146 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); raise (UnusedToken "'...' is reserved, but unused in GoLite") )
-# 3238 "lex.ml"
+# 3250 "lex.ml"
 
   | 48 ->
-# 135 "lex.mll"
+# 147 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  LPAR (Lexing.lexeme lexbuf) )
-# 3243 "lex.ml"
+# 3255 "lex.ml"
 
   | 49 ->
-# 136 "lex.mll"
+# 148 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagUp();  RPAR (Lexing.lexeme lexbuf) )
-# 3248 "lex.ml"
+# 3260 "lex.ml"
 
   | 50 ->
-# 137 "lex.mll"
+# 149 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  LSQPAR (Lexing.lexeme lexbuf) )
-# 3253 "lex.ml"
+# 3265 "lex.ml"
 
   | 51 ->
-# 138 "lex.mll"
+# 150 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagUp();  RSQPAR (Lexing.lexeme lexbuf) )
-# 3258 "lex.ml"
+# 3270 "lex.ml"
 
   | 52 ->
-# 139 "lex.mll"
+# 151 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  LCURL (Lexing.lexeme lexbuf) )
-# 3263 "lex.ml"
+# 3275 "lex.ml"
 
   | 53 ->
-# 140 "lex.mll"
+# 152 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagUp();  RCURL (Lexing.lexeme lexbuf) )
-# 3268 "lex.ml"
+# 3280 "lex.ml"
 
   | 54 ->
-# 141 "lex.mll"
+# 153 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  COMMA (Lexing.lexeme lexbuf) )
-# 3273 "lex.ml"
+# 3285 "lex.ml"
 
   | 55 ->
-# 142 "lex.mll"
+# 154 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  DOT (Lexing.lexeme lexbuf) )
-# 3278 "lex.ml"
+# 3290 "lex.ml"
 
   | 56 ->
-# 143 "lex.mll"
+# 155 "lex.mll"
                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  COLON (Lexing.lexeme lexbuf) )
-# 3283 "lex.ml"
+# 3295 "lex.ml"
 
   | 57 ->
-# 144 "lex.mll"
+# 156 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); raise (UnusedToken "'append' is reserved, but unused in GoLite") )
-# 3288 "lex.ml"
+# 3300 "lex.ml"
 
   | 58 ->
-# 145 "lex.mll"
+# 157 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); semiFlagUp();  BREAK (Lexing.lexeme lexbuf) )
-# 3293 "lex.ml"
+# 3305 "lex.ml"
 
   | 59 ->
-# 146 "lex.mll"
+# 158 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  CASE (Lexing.lexeme lexbuf))
-# 3298 "lex.ml"
+# 3310 "lex.ml"
 
   | 60 ->
-# 147 "lex.mll"
+# 159 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); raise (UnusedToken "'chan' is reserved, but unused in GoLite") )
-# 3303 "lex.ml"
+# 3315 "lex.ml"
 
   | 61 ->
-# 148 "lex.mll"
+# 160 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); raise (UnusedToken "'const' is reserved, but unused in GoLite") )
-# 3308 "lex.ml"
+# 3320 "lex.ml"
 
   | 62 ->
-# 149 "lex.mll"
+# 161 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); semiFlagUp();  CONTINUE (Lexing.lexeme lexbuf) )
-# 3313 "lex.ml"
+# 3325 "lex.ml"
 
   | 63 ->
-# 150 "lex.mll"
+# 162 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  DEFAULT (Lexing.lexeme lexbuf) )
-# 3318 "lex.ml"
+# 3330 "lex.ml"
 
   | 64 ->
-# 151 "lex.mll"
+# 163 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); raise (UnusedToken "'defer' is reserved, but unused in GoLite") )
-# 3323 "lex.ml"
+# 3335 "lex.ml"
 
   | 65 ->
-# 152 "lex.mll"
+# 164 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  ELSE (Lexing.lexeme lexbuf) )
-# 3328 "lex.ml"
+# 3340 "lex.ml"
 
   | 66 ->
-# 153 "lex.mll"
+# 165 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); raise (UnusedToken "'fallthrough' is reserved, but unused in GoLite") )
-# 3333 "lex.ml"
+# 3345 "lex.ml"
 
   | 67 ->
-# 154 "lex.mll"
+# 166 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  FOR (Lexing.lexeme lexbuf) )
-# 3338 "lex.ml"
+# 3350 "lex.ml"
 
   | 68 ->
-# 155 "lex.mll"
+# 167 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  FUNC (Lexing.lexeme lexbuf) )
-# 3343 "lex.ml"
+# 3355 "lex.ml"
 
   | 69 ->
-# 156 "lex.mll"
+# 168 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); raise (UnusedToken "'go' is reserved, but unused in GoLite") )
-# 3348 "lex.ml"
+# 3360 "lex.ml"
 
   | 70 ->
-# 157 "lex.mll"
+# 169 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); raise (UnusedToken "'goto' is reserved, but unused in GoLite, also who uses 'goto, seriously...'") )
-# 3353 "lex.ml"
+# 3365 "lex.ml"
 
   | 71 ->
-# 158 "lex.mll"
+# 170 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  IF (Lexing.lexeme lexbuf) )
-# 3358 "lex.ml"
+# 3370 "lex.ml"
 
   | 72 ->
-# 159 "lex.mll"
+# 171 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); raise (UnusedToken "'import' is reserved, but unused in GoLite") )
-# 3363 "lex.ml"
+# 3375 "lex.ml"
 
   | 73 ->
-# 160 "lex.mll"
+# 172 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); raise (UnusedToken "'interface' is reserved, but unused in GoLite") )
-# 3368 "lex.ml"
+# 3380 "lex.ml"
 
   | 74 ->
-# 161 "lex.mll"
+# 173 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); raise (UnusedToken "'map' is reserved, but unused in GoLite") )
-# 3373 "lex.ml"
+# 3385 "lex.ml"
 
   | 75 ->
-# 162 "lex.mll"
+# 174 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  PACKAGE (Lexing.lexeme lexbuf) )
-# 3378 "lex.ml"
+# 3390 "lex.ml"
 
   | 76 ->
-# 163 "lex.mll"
+# 175 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  PRINT (Lexing.lexeme lexbuf) )
-# 3383 "lex.ml"
+# 3395 "lex.ml"
 
   | 77 ->
-# 164 "lex.mll"
+# 176 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  PRINTLN (Lexing.lexeme lexbuf) )
-# 3388 "lex.ml"
+# 3400 "lex.ml"
 
   | 78 ->
-# 165 "lex.mll"
+# 177 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); raise (UnusedToken "'range' is reserved, but unused in GoLite") )
-# 3393 "lex.ml"
+# 3405 "lex.ml"
 
   | 79 ->
-# 166 "lex.mll"
+# 178 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); semiFlagUp();  RETURN (Lexing.lexeme lexbuf) )
-# 3398 "lex.ml"
+# 3410 "lex.ml"
 
   | 80 ->
-# 167 "lex.mll"
+# 179 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); raise (UnusedToken "'select' is reserved, but unused in GoLite") )
-# 3403 "lex.ml"
+# 3415 "lex.ml"
 
   | 81 ->
-# 168 "lex.mll"
+# 180 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  STRUCT (Lexing.lexeme lexbuf) )
-# 3408 "lex.ml"
+# 3420 "lex.ml"
 
   | 82 ->
-# 169 "lex.mll"
+# 181 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  SWITCH (Lexing.lexeme lexbuf) )
-# 3413 "lex.ml"
+# 3425 "lex.ml"
 
   | 83 ->
-# 170 "lex.mll"
+# 182 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  TYPET (Lexing.lexeme lexbuf) )
-# 3418 "lex.ml"
+# 3430 "lex.ml"
 
   | 84 ->
-# 171 "lex.mll"
+# 183 "lex.mll"
                      ( dprint (Lexing.lexeme lexbuf); semiFlagDown();  VAR (Lexing.lexeme lexbuf) )
-# 3423 "lex.ml"
+# 3435 "lex.ml"
 
   | 85 ->
-# 172 "lex.mll"
+# 184 "lex.mll"
                      ( dprint ("id: " ^ (Lexing.lexeme lexbuf)); semiFlagUp(); ID (Lexing.lexeme lexbuf) )
-# 3428 "lex.ml"
+# 3440 "lex.ml"
 
   | 86 ->
-# 173 "lex.mll"
+# 185 "lex.mll"
                      ( dprint "eof"; semiFlagDown();  EOF (Lexing.lexeme lexbuf) )
-# 3433 "lex.ml"
+# 3445 "lex.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf; 
       __ocaml_lex_read_rec lexbuf __ocaml_lex_state
 
 ;;
 
-# 175 "lex.mll"
+# 187 "lex.mll"
  
   (* Trailer *)
 
-# 3444 "lex.ml"
+# 3456 "lex.ml"

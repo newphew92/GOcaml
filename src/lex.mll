@@ -11,8 +11,16 @@
   exception UnusedToken of string
 
   (* for debug *)
-  let debug_flag = ref true
-  let dprint str = if !debug_flag then print_endline str else ()
+  let debug_flag = ref false
+  let dprint str =
+    if !debug_flag then
+      if (compare str "\n") = 0 then
+        print_string "\n"
+      else if (compare str "eof") = 0 then
+        print_string ("[" ^ str ^ "]" ^ "\n")
+      else
+        print_string ("[" ^ str ^ "]" ^ " ")
+    else ()
 
 
   (* Flag for semicolon insertion *)
@@ -58,7 +66,7 @@ let inRawString = ( charNoBackQuote | '\\' )*
 let inRuneString = ( '\\' (escapedCharId | '\'') ) | char
 
 (* Number literals *)
-let int = ['1' - '9'] digit*
+let int = ['1' - '9'] digit* | '0'
 let octal = '0' digit+
 let hexa = '0' ( 'x' | 'X' ) digit+
 let float = digit+ '.' digit* | digit* '.' digit+
@@ -81,12 +89,16 @@ rule read =
   parse
   | space           { read lexbuf }
   | semicolon       { dprint (Lexing.lexeme lexbuf); semiFlagDown();  SEMICOLON (Lexing.lexeme lexbuf)}
-  | linebreak       { semiFlagDown();  if !insSemi
-                      then
-                        let () =
-                        dprint ("inserted: " ^ Lexing.lexeme lexbuf) in
-                        SEMICOLON (Lexing.lexeme lexbuf)
-                      else (read lexbuf)}
+  | linebreak       { match !insSemi with
+                        | true ->
+                          semiFlagDown();
+                          dprint ("inserted semicolon");
+                          dprint ("\n");
+                          SEMICOLON (Lexing.lexeme lexbuf)
+                        | false ->
+                          dprint ("\n");
+                          read lexbuf
+                    }
   | comment         { dprint (Lexing.lexeme lexbuf); read lexbuf }
   | int             { dprint (Lexing.lexeme lexbuf); semiFlagUp();  INT (Lexing.lexeme lexbuf) }
   | octal           { dprint (Lexing.lexeme lexbuf); semiFlagUp();  OCTAL (Lexing.lexeme lexbuf) }
@@ -95,7 +107,7 @@ rule read =
   | interpretString { dprint (Lexing.lexeme lexbuf); semiFlagUp();  STRING (Lexing.lexeme lexbuf) }
   | rawString       { dprint (Lexing.lexeme lexbuf); semiFlagUp();  RAWSTRING (Lexing.lexeme lexbuf) }
   | runeString      { dprint (Lexing.lexeme lexbuf); semiFlagUp();  RUNESTRING (Lexing.lexeme lexbuf) }
-  | type            { dprint (Lexing.lexeme lexbuf); semiFlagDown();  TYPE (Lexing.lexeme lexbuf) }
+  | type            { dprint ("type: " ^ Lexing.lexeme lexbuf); semiFlagUp();  TYPE (Lexing.lexeme lexbuf) }
   | '+'             { dprint (Lexing.lexeme lexbuf); semiFlagDown();  PLUS (Lexing.lexeme lexbuf) }
   | '-'             { dprint (Lexing.lexeme lexbuf); semiFlagDown();  MINUS (Lexing.lexeme lexbuf) }
   | '*'             { dprint (Lexing.lexeme lexbuf); semiFlagDown();  STAR (Lexing.lexeme lexbuf) }

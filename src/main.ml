@@ -10,13 +10,11 @@ exception InputError of string
 
 let help_string =
 "Usage:
-  GOcaml <filename> -[pso] [target]
+  GOcaml <filename> [-pptype] [-dumpsymtab] [-o] [target]
 Flags:
-  p: pretty print
-  s: symbol table
-  o: output to target file name given as [target]
-Target:
-  if flag -o is given, will output to [target]
+  pptype: pretty print with types as comments
+  dumpsymtab: dumpsymbol table each time scope is exited
+  o: output to target which should be given afterward
 "
 
 (*
@@ -28,10 +26,13 @@ let () =
 *)
 
 (* Count number of arguments *)
+(*
+loguest: GOcaml file.go -pptype -dumpsymtab -o target.file
+*)
 let () =
-  match (Array.length Sys.argv) with
-    | 2 | 3 | 4 -> ()
-    | _ ->
+  match (Array.length Sys.argv < 7) with
+    | true -> ()
+    | false ->
       print_string help_string;
       exit 1
 
@@ -42,28 +43,32 @@ let () =
        (compare Sys.argv.(1) "?") = 0) then
     let () = print_string help_string in exit 0
 
-(* read args *)
+(* READ ARGS *)
+
+(* first arg must be the file *)
 let input_file = Sys.argv.(1)
 
-(* second argument is the flag list, must start with - *)
-let flags = if (Array.length Sys.argv > 2) then Sys.argv.(2)
-            else "-"
+(* flags *)
+
+let flag_o = ref false
+let flag_dst = ref false
+let flag_pp = ref false
+let output_file = ref "a.gocaml.out"
+
 let () =
-  if ( (String.get flags 0) = '-' ) then ()
-  else  let () = print_string help_string in exit 1
+for i = 2 to (Array.length Sys.argv - 1) do
+  match Sys.argv.(i) with
+    | "-dumpsymtab" -> flag_dst := true
+    | "-pptype" -> flag_pp := true
+    | "-o" -> flag_o := true
+    | filename ->
+      if !flag_o && (compare !output_file "a.gocaml.out" = 0) then
+        output_file := filename
+      else
+        print_string help_string; exit 1
+done
 
-let flag_o = String.contains flags 'o'
-let flag_s = String.contains flags 's'
-let flag_p = String.contains flags 'p'
-
-
-(* generate output file name *)
-let output_file = match (Array.length Sys.argv = 4), flag_o with
-  | true, true -> Sys.argv.(3)
-  | false , false -> "a.gocaml.out"
-  | _ -> let () = print_string help_string in exit 1
-
-let () = print_endline ("Compiling file " ^ input_file ^ " to " ^ output_file)
+let () = print_endline ("Compiling file " ^ input_file ^ " to " ^ !output_file)
 
 (* load the program from file *)
 let load_file f =
@@ -98,7 +103,6 @@ let get_line pos str =
   let seen = String.sub str 0 pos
   in count_substring seen "\n" + 1
 
-
 let ast =
     let lexbuf = (Lexing.from_string program_string) in
       try
@@ -112,10 +116,12 @@ let ast =
 let completely_weeded_ast = Weeder.weedAst ast
 
 (* INSERT TYPECHECKING STEP HERE *)
+(* TODO: change to typchecker call *)
+let annotated_ast = completely_weeded_ast
 
 (* pretty print *)
 let () =
-  (* Write message to file *)
-  let oc = open_out output_file in    (* create or truncate file, return channel *)
-  fprintf oc "%s\n" (PrettyPrint.prettyPrint completely_weeded_ast);   (* write something *)
+  print_endline "For now only pretty printing is returned (thus -pptype is actiavted by default)";
+  let oc = open_out (!output_file ^ ".pretty") in
+  fprintf oc "%s\n" (PrettyPrint.prettyPrint annotated_ast);
   close_out oc;
