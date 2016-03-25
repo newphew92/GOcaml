@@ -31,6 +31,8 @@ module Stack =
   struct
     type 'a t = ('a list) ref
     let dump = ref false
+    let get_dump = !dump
+    let set_dump x = dump := x
     let create () : 'a t= ref []
     let push (x: 'a) (s: 'a t): unit =
           s := x::(!s)
@@ -74,11 +76,12 @@ module Stack =
   end;;
 
 (*We will apply the typechecker at the beginning of the AST*)
-let rec typeCheck (tree: ast) =
-  let symbolStack = Stack.create()
+let rec typeCheck (tree: ast) (dumping:bool )=
+(  let symbolStack = Stack.create() in
+  let () = Stack.set_dump dumping
   in {package = tree.package;
     declarations = handleDecList tree.declarations symbolStack []}
-
+)
 
 and handleDecList (decList:dec list) (collection: symbolTable Stack.t) (acc:dec list):(dec list) =
 match decList with
@@ -172,8 +175,8 @@ and handleAssignee (ass:assignee) collection :assignee= match ass.options with
 and handleAssigneeL (assL: assignee list) (expL: exp list) collection (assAcc:assignee list) (expAcc: exp list) : assignationOptions= match assL,expL with
   | ([],[])->Assign (assAcc, expAcc)
   | (assH::assT, eH::eT)->
-    if ((handleAssignee assH collection).theType = (handleExp eH collection).theType) then
-      handleAssigneeL assT eT collection (assAcc@[handleAssignee assH collection]) (expAcc@[handleExp eH collection])
+    (if ((handleAssignee assH collection).theType = (handleExp eH collection).theType) then
+      handleAssigneeL assT eT collection (assAcc@[handleAssignee assH collection]) (expAcc@[handleExp eH collection]))
 and handleLoop loop collection = raise TODO
 and handleIf stat collection = raise TODO
 and handleSwitch exp collection = raise TODO
