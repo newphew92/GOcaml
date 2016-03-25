@@ -159,7 +159,7 @@ and handleAssignS ass collection = match ass.options with
   | DeclAssign (aList, eList)->raise TODO
   | OpAssign (ass, op, e)->raise TODO
   | Increment (ass, op)->raise TODO
-and handleAssignee (ass:assignee) collection :assignee= match ass.options with
+and handleAssignee (ass:assignee) (collection:assignee) = match ass.options with
   | Object e -> (match e.options with
     | ArrayElem (ee, eee) -> {theType=(handleExp e collection).theType;options=ass.options}
     | ArraySlice (ee, eop, eeop) -> {theType=(handleExp e collection).theType;options=ass.options}
@@ -169,7 +169,7 @@ and handleAssignee (ass:assignee) collection :assignee= match ass.options with
           | Some str-> Stack.writeSymbol {id=s;idType=str} collection; {theType =Some str;options=ass.options}
           | _->raise CatastrophicError))
     | _ -> raise CantBeAssigned)
-and handleAssigneeL (assL: assignee list) (expL: exp list) collection (assAcc:assignee list) (expAcc: exp list) : assignationOptions= match assL,expL with
+and handleAssigneeL (assL: assignee list) (expL: exp list) collection (assAcc:assignee list) (expAcc: exp list) = match assL,expL with
   | ([],[])->Assign (assAcc, expAcc)
   | (assH::assT, eH::eT)->
     if ((handleAssignee assH collection).theType = (handleExp eH collection).theType) then
