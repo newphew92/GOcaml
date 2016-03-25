@@ -29,7 +29,7 @@ ocamlfind ocamlc -c -g -thread -package core,ppx_jane -package str -o weeder.cmo
 ocamlfind ocamlc -c -g -thread -package core,ppx_jane -package str -o main.cmo main.ml
 + ocamlfind ocamlc -c -g -thread -package core,ppx_jane -package str -o main.cmo main.ml
 findlib: [WARNING] Interface topdirs.cmi occurs in several directories: /home/olivier/.opam/4.02.3/lib/ocaml/compiler-libs, /home/olivier/.opam/4.02.3/lib/ocaml
-File "main.ml", line 81, characters 12-25:
+File "main.ml", line 86, characters 12-25:
 Warning 3: deprecated: String.create
 Use Bytes.create instead.
 # Target: ast.cmx, tags: { compile, debug, extension:cmx, extension:ml, file:ast.cmx, file:ast.ml, implem, native, ocaml, package(core,ppx_jane), package(str), quiet, thread, traverse }
@@ -49,7 +49,7 @@ ocamlfind ocamlopt -c -g -thread -package core,ppx_jane -package str -o main.cmx
 + ocamlfind ocamlopt -c -g -thread -package core,ppx_jane -package str -o main.cmx main.ml
 findlib: [WARNING] Interface main.cmi occurs in several directories: ., /home/olivier/.opam/4.02.3/lib/ocaml/compiler-libs
 findlib: [WARNING] Interface topdirs.cmi occurs in several directories: /home/olivier/.opam/4.02.3/lib/ocaml/compiler-libs, /home/olivier/.opam/4.02.3/lib/ocaml
-File "main.ml", line 81, characters 12-25:
+File "main.ml", line 86, characters 12-25:
 Warning 3: deprecated: String.create
 Use Bytes.create instead.
 # Target: main.native, tags: { debug, dont_link_with, extension:native, file:main.native, link, native, ocaml, package(core,ppx_jane), package(str), program, quiet, thread, traverse }

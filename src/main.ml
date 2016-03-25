@@ -39,10 +39,15 @@ let () =
 
 (* Special case, OCaml -help|-h|? prints the help string *)
 let () =
-  if ( (compare Sys.argv.(1) "-help") = 0 ||
-       (compare Sys.argv.(1) "-h") = 0 ||
-       (compare Sys.argv.(1) "?") = 0) then
-    let () = print_string help_string in exit 0
+  try
+    if ( (compare Sys.argv.(1) "-help") = 0 ||
+         (compare Sys.argv.(1) "-h") = 0 ||
+         (compare Sys.argv.(1) "?") = 0) then
+      let () = print_string help_string in exit 0
+    with
+      | _ ->
+        print_string help_string;
+        exit 1
 
 (* READ ARGS *)
 

@@ -21,3 +21,7 @@ recent versions of ocamlbuild and ocamlfind.
 For the last milestone we were unable to finish on time, so even though we
 are slowly catching up, the typechecker is not ready yet. Pretty printing and
 weeding works fine.
+
+Sources:
+  There is very little doc for these OCaml toosl, so everything we might have used of mimiced
+  comes from the official tutorial and documentation examples.
