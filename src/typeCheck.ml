@@ -9,6 +9,7 @@ exception TypeNotDefined
 exception TryingToWriteEmptySymbol
 exception TypeMismatch
 exception TypeCantBeCast
+exception CantBeAssigned
 type symbol = {
   id:string;
   idType: string;
@@ -16,19 +17,22 @@ type symbol = {
 
 type symbolTable = symbol list (*the symbol table itself*)
 
-(*extract string from typecall*)
-let getTypeCall (typeCalls:typeCall option): string= match typeCalls with
+let getTypeCall (typeCalls:typeCallOptions) : string = match typeCalls with
+| SliceType (n)-> "slice"
+| DeclaredType (g)->g (*check if type has been declared*)
+| BuiltInType (g)->g
+| ArrayType (e,t)-> "array"
+(*extract string from typecall option*)
+let getTypeCallOp (typeCalls:typeCall option): string= match typeCalls with
   | None -> ""
-  | Some (n) -> match n.options with
-  | SliceType (n)-> "slice"
-  | DeclaredType (g)->g (*check if type has been declared*)
-  | BuiltInType (g)->g
-  | ArrayType (e,t)-> "array"
-
+  | Some (n) -> getTypeCall n.options
+(* extract string from typecall *)
 module Stack =
   struct
     type 'a t = ('a list) ref
     let dump = ref false
+    let get_dump = !dump
+    let set_dump x = dump := x
     let create () : 'a t= ref []
     let push (x: 'a) (s: 'a t): unit =
           s := x::(!s)
@@ -61,7 +65,7 @@ module Stack =
     let rec writeSymsFromlist (idList:string list) (idType:typeCall) s= match idList with
       | [] -> ()
       | hd::tail ->
-        writeSymbol {id = hd; idType = (getTypeCall (Some idType))} s;
+        writeSymbol {id = hd; idType = (getTypeCallOp (Some idType))} s;
         writeSymsFromlist tail idType s
     let rec tableDumpRec l = match l with
       | [] -> Printf.sprintf "---------------------------\n"
@@ -72,11 +76,12 @@ module Stack =
   end;;
 
 (*We will apply the typechecker at the beginning of the AST*)
-let rec typeCheck (tree: ast) =
-  let symbolStack = Stack.create()
+let rec typeCheck (tree: ast) (dumping:bool )=
+(  let symbolStack = Stack.create() in
+  let () = Stack.set_dump dumping
   in {package = tree.package;
     declarations = handleDecList tree.declarations symbolStack []}
-
+)
 
 and handleDecList (decList:dec list) (collection: symbolTable Stack.t) (acc:dec list):(dec list) =
 match decList with
@@ -88,7 +93,7 @@ match decList with
     handleDecList tail collection acc@h
   | FunctionD (id, argList, funType,block)->
   (*write the function's declared type*)
-    Stack.writeSymbol {id = id;idType = (getTypeCall funType)} collection;
+    Stack.writeSymbol {id = id;idType = (getTypeCallOp funType)} collection;
     handleDecList tail collection (acc@[handleFunctionD id argList funType block collection])
   | VarsD (idList, varType)  ->
   (* straightforward, just write to table *)
@@ -105,7 +110,7 @@ and handleFunctionD symName argList (funType:typeCall option) block (collection)
   writeArgs argList collection [];
   (*return the annotaed FunctionD  *)
   let g = FunctionD (symName, argList, funType, handleBlock block collection []) in
-  {theType = Some (getTypeCall funType); options = g}
+  {theType = Some (getTypeCallOp funType); options = g}
 
 (* ==================To handle things like a,b,c int=============================== *)
 (*write idlist declarations to symbolstack*)
@@ -113,10 +118,10 @@ and writeArgs varsList (collection) (holdEmpty:string list) = match varsList wit
   | [] -> ()
   | hd::tail -> match hd with
     | (id, idType) -> match idType with
-      | None -> writeArgs tail collection (id::holdEmpty) (*hold on to ids who's type is not associated yet*)
+      | None -> writeArgs tail collection (holdEmpty@[id]) (*hold on to ids who's type is not associated yet*)
       | Some str ->
-        Stack.writeSymbol {id = id;idType = str} collection;
-        argTypeFiller holdEmpty collection str; (*pass in the held ids and write them to the symtable as well*)
+        Stack.writeSymbol {id = id;idType = (getTypeCall str.options)} collection;
+        argTypeFiller holdEmpty collection (getTypeCall str.options); (*pass in the held ids and write them to the symtable as well*)
         writeArgs tail collection []
 (* for mutliple id declarations (var x,y,z int) *)
 and argTypeFiller (strs:string list) (collection) (str:string) = match strs with
@@ -130,7 +135,7 @@ and handleBlock (stats:statement list) (collection) (acc:statement list):stateme
 (* ======================================================================== *)
 (* =====================================varsDec=============================== *)
 and handleVarDec (idList:string list) (varType:typeCall) (collection):dec=
-  let g =  VarsD (idList, varType) in {theType = Some (getTypeCall(Some varType)); options = g}
+  let g =  VarsD (idList, varType) in {theType = Some (getTypeCallOp(Some varType)); options = g}
 
 and handleVarsAss (idList:string list) (varType:typeCall option) expList = raise TODO
 
@@ -151,12 +156,27 @@ and handleStat stat collection = match stat.options with
   | ExpS exp -> {theType=stat.theType;options=ExpS (handleExp exp collection)}
   | AssignS ass -> {theType=stat.theType;options=AssignS (handleAssignS ass collection)}
 and handleAssignS ass collection = match ass.options with
-  | AssignS (assH::assT, eH::eT)->
-    try Stack.getType assH collection with NotFound ->raise TODO
+  | Assign (assL, expL)-> (*TODO use handleAssignee to the type*)
+       {theType=ass.theType;options=(handleAssigneeL assL expL collection [] [])}
     (* -> writeSymbol {id=assH.options(handleExp eH collection).theType} *)
   | DeclAssign (aList, eList)->raise TODO
   | OpAssign (ass, op, e)->raise TODO
   | Increment (ass, op)->raise TODO
+and handleAssignee (ass:assignee) (collection:assignee) = match ass.options with
+  | Object e -> (match e.options with
+    | ArrayElem (ee, eee) -> {theType=(handleExp e collection).theType;options=ass.options}
+    | ArraySlice (ee, eop, eeop) -> {theType=(handleExp e collection).theType;options=ass.options}
+    | ExpId s-> (match e.theType with
+      | Some str -> {theType=e.theType;options=ass.options}
+      | None -> (match (handleExp e collection).theType with
+          | Some str-> Stack.writeSymbol {id=s;idType=str} collection; {theType =Some str;options=ass.options}
+          | _->raise CatastrophicError))
+    | _ -> raise CantBeAssigned)
+and handleAssigneeL (assL: assignee list) (expL: exp list) collection (assAcc:assignee list) (expAcc: exp list) = match assL,expL with
+  | ([],[])->Assign (assAcc, expAcc)
+  | (assH::assT, eH::eT)->
+    (if ((handleAssignee assH collection).theType = (handleExp eH collection).theType) then
+      handleAssigneeL assT eT collection (assAcc@[handleAssignee assH collection]) (expAcc@[handleExp eH collection]))
 and handleLoop loop collection = raise TODO
 and handleIf stat collection = raise TODO
 and handleSwitch exp collection = raise TODO
@@ -165,15 +185,15 @@ and handleExpList el c acc :(exp list)= match el with
   | h::t -> handleExpList t c ((handleExp h c)::acc)
   | _ -> acc
 and handleExp exp collection :exp= match exp.options with
-  | FloatConst s-> {theType=Some s;options=exp.options}
-  | IntConst s-> {theType=Some s;options=exp.options}
-  | OctConst s->{theType=Some s;options=exp.options}
-  | HexaConst s->{theType=Some s;options=exp.options}
-  | BoolConst s->{theType=Some s;options=exp.options}
-  | StringConst s->{theType=Some s;options=exp.options}
-  | RawStringConst s->{theType=Some s;options=exp.options}
-  | RuneConst s->{theType=Some s;options=exp.options}
-  | ExpId s->{theType=Some s;options=exp.options}
+  | FloatConst s-> {theType=Some "float";options=exp.options}
+  | IntConst s-> {theType=Some "int";options=exp.options}
+  | OctConst s->{theType=Some "int";options=exp.options}
+  | HexaConst s->{theType=Some "int";options=exp.options}
+  | BoolConst s->{theType=Some "bool";options=exp.options}
+  | StringConst s->{theType=Some "string";options=exp.options}
+  | RawStringConst s->{theType=Some "string";options=exp.options}
+  | RuneConst s->{theType=Some "rune";options=exp.options}
+  | ExpId s->(try (Stack.getType s collection) with NotFound ->{theType=None;options=exp.options})
   | BinaryOp (e,s,ee)->if (handleExp e collection).theType = (handleExp ee collection).theType then
     {theType=((handleExp e collection).theType);options=exp.options} else raise TypeMismatch
   | UnaryOp (s,e)->{theType= (handleExp e collection).theType; options=(handleExp e collection).options}
@@ -185,7 +205,8 @@ and handleExp exp collection :exp= match exp.options with
   | TypeCast (s,e)->{theType= (handleCast s e collection).theType; options=exp.options}
 
 and handleCast s e collection :exp=
-  let t = (handleExp e collection) in match s with
+  let ss = (getTypeCall s.options) in
+  let t = (handleExp e collection) in match ss with
     (* cast int to - *)
     | "int" | "float64" | "float32" | "oct" | "hexa"-> (match t.theType with
       | Some "int" -> {theType=Some "int";options=e.options}
