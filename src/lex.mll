@@ -71,6 +71,9 @@ let octal = '0' digit+
 let hexa = '0' ( 'x' | 'X' ) digit+
 let float = digit+ '.' digit* | digit* '.' digit+
 
+(* Boolean literals *)
+let bool = "true" | "false"
+
 (*
   String/rune literals
   Double quote = intepreted strings
@@ -107,6 +110,7 @@ rule read =
   | interpretString { dprint (Lexing.lexeme lexbuf); semiFlagUp();  STRING (Lexing.lexeme lexbuf) }
   | rawString       { dprint (Lexing.lexeme lexbuf); semiFlagUp();  RAWSTRING (Lexing.lexeme lexbuf) }
   | runeString      { dprint (Lexing.lexeme lexbuf); semiFlagUp();  RUNESTRING (Lexing.lexeme lexbuf) }
+  | bool            { dprint (Lexing.lexeme lexbuf); semiFlagUp();  BOOL (Lexing.lexeme lexbuf) }
   | type            { dprint ("type: " ^ Lexing.lexeme lexbuf); semiFlagUp();  TYPE (Lexing.lexeme lexbuf) }
   | '+'             { dprint (Lexing.lexeme lexbuf); semiFlagDown();  PLUS (Lexing.lexeme lexbuf) }
   | '-'             { dprint (Lexing.lexeme lexbuf); semiFlagDown();  MINUS (Lexing.lexeme lexbuf) }

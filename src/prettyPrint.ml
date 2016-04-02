@@ -136,11 +136,13 @@ and pprintExp (exp:exp) =
       (pprintExp func) @ ["("] @ (pprintSeparatedExpList args ",") @ [")"] @ (printTheType exp.theType)
     (* Lambda of (string * typeCall option) list * typeCall option * statement list *)
     | Lambda (args, opFuncType, statList) ->
-      "("::(pprintArgs args) @ [")"] @
+      "func("::(pprintArgs args) @ [")"] @
       (pprintOptionalTypeCall opFuncType) @
       ["{\n"] @ (pprintIndentedStatList statList) @
       ["}"]
-    | TypeCast (toType, exp) -> (pprintTypeCall toType) @ (pprintExp exp)
+    | TypeCast (toType, exp) ->
+      (pprintTypeCall toType) @
+      ["("] @ (pprintExp exp) @ [")"]
 
 
 and pprintOptionalTypeCall (opType: typeCall option) =

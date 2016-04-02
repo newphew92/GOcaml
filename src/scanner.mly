@@ -17,6 +17,7 @@
 %token <string> STRING
 %token <string> RAWSTRING
 %token <string> RUNESTRING
+%token <string> BOOL
 %token <string> TYPE
 /* Unused but reserved tokens
  %token APPEND, CHAN, CONST, DEFER, DOTS, FALLTHROUGH
@@ -235,6 +236,7 @@ constVal :
   | RUNESTRING { { theType=None; options=RuneConst $1 } }
   | OCTAL { { theType=None; options=OctConst $1 } }
   | HEXA { { theType=None; options=HexaConst $1 } }
+  | BOOL { { theType=None; options=BoolConst $1 } }
   | stringVal {$1}
 
 stringVal :
