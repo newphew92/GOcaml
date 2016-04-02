@@ -7,3 +7,4 @@ src/_build
 !src/weeder.ml
 !src/main.ml
 !src/ast.ml
+!src/codeGen.ml
