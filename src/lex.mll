@@ -135,8 +135,9 @@ rule read =
   | ":="            { dprint (Lexing.lexeme lexbuf); semiFlagDown();  COLEQ (Lexing.lexeme lexbuf) }
   | "&^="           { dprint (Lexing.lexeme lexbuf); semiFlagDown();  AMPHATEQ (Lexing.lexeme lexbuf) }
   | "&&"            { dprint (Lexing.lexeme lexbuf); semiFlagDown();  AND (Lexing.lexeme lexbuf) }
-  | "|| "            { dprint (Lexing.lexeme lexbuf);  semiFlagDown(); OR (Lexing.lexeme lexbuf) }
-  | "<-"            { dprint (Lexing.lexeme lexbuf); semiFlagDown();  LTMIN (Lexing.lexeme lexbuf) }
+  | "||"            { dprint (Lexing.lexeme lexbuf);  semiFlagDown(); OR (Lexing.lexeme lexbuf) }
+  | "<-"            { dprint (Lexing.lexeme lexbuf); raise (UnusedToken "'<-' is reserved, but unused in GoLite")
+                      (*dprint (Lexing.lexeme lexbuf); semiFlagDown();  LTMIN (Lexing.lexeme lexbuf)*) }
   | "++"            { dprint (Lexing.lexeme lexbuf); semiFlagUp();  PPLUS (Lexing.lexeme lexbuf) }
   | "--"            { dprint (Lexing.lexeme lexbuf); semiFlagUp();  MMINUS (Lexing.lexeme lexbuf) }
   | "=="            { dprint (Lexing.lexeme lexbuf); semiFlagDown();  EEQUAL (Lexing.lexeme lexbuf) }

@@ -76,18 +76,26 @@ let popLambdaAlias () =
 *)
 
 let fn_for_rune_cast =
-"
-def rune_to_string(r):
-  return chr(r) if isinstance(r, int) else r
+"def rune_to_string(r):
+\treturn chr(r) if isinstance(r, int) else r
 "
 
-let rec codeGenProg ast =
+let rec codeGenProg (ast:ast) =
   concat " " (
     "from __future__ import print_function\n" ::
     "import sys\n\n" ::
-    "fn_for_rune_cast" ::
-    (codeGenDecList ast.declarations) @ ["\n"] @ ["main(*sys.argv[1:])"]
+    fn_for_rune_cast ::
+    (codeGenDecList ast.declarations) @ ["\n"] @
+    ["# arguments from the console can only be passed as string\n"] @
+    ["# for now you need to force cast them in go\n"] @
+    [renameVar "main(*sys.argv[1:])"]
     )
+
+and renameVar varName =
+  "go_" ^ varName
+
+and renameVarList varList =
+  List.map renameVar varList
 
 and declareStackLambdas () =
   traverseAndWriteLambdas !lambdaStack
@@ -134,7 +142,7 @@ and codeGenDec (decl:dec) =
     (* name: string, args: (string * typeCall option) list,
     fnType: typeCall option, statList: statement list *)
     | FunctionD (name, args, fnType, statList) ->
-        ["def"; name; "("] @ (codeGenArgs args) @ [")"] @ [":\n"] @
+        ["def"; (renameVar name); "("] @ (codeGenArgs args) @ [")"] @ [":\n"] @
         (codeGenIndentedStatList statList) @ ["\n"]
     (* vars: string list, tc: typeCall *)
     | VarsD (vars, tc) -> []
@@ -142,7 +150,7 @@ and codeGenDec (decl:dec) =
     | VarsDandAssign (vars, opType, expList) ->
       List.iter accumulateLambdasInExp expList;
       declareStackLambdas() @
-      (concat ", " vars) :: "=" :: (codeGenSeparatedExpList expList ",") @ ["\n"] @
+      (concat ", " (renameVarList vars)) :: "=" :: (codeGenSeparatedExpList expList ",") @ ["\n"] @
       deleteStackLambdas ()
     (* TypeD of typeDec *)
     | TypeD td -> (codeGenTypeDec td)
@@ -151,7 +159,9 @@ and codeGenTypeDec (typeDec:typeDec) =
   match typeDec.options with
     | Simple strAndTypeList -> []
     | StructD (name, fieldsList) ->
-      "class"::name::"(object): \n"::(codeGenStructFieldDecList fieldsList) @ ["\n"]
+      increaseIndent();
+      let x = "class"::(renameVar name)::"(object): \n"::(codeGenStructFieldDecList fieldsList) @ ["\n"]
+      in decreaseIndent(); x
 
 and codeGenOptionalExp (expOp: exp option) =
   match expOp with
@@ -205,6 +215,9 @@ and codeGenInlineStat (stat:statement) =
     | ExpS e -> codeGenExp e
     | AssignS a -> codeGenAssignation a
 
+and codeGenExpInPar (exp:exp) =
+  "("::(codeGenExp exp) @ [")"]
+
 and codeGenExp (exp:exp) =
   match exp.options with
     | FloatConst s -> [s]
@@ -215,7 +228,7 @@ and codeGenExp (exp:exp) =
     | StringConst s -> [s]
     | RawStringConst s -> ["r" ^ s]
     | RuneConst s -> ["ord(" ^ s ^")"]
-    | ExpId s -> ["var_" ^ s]
+    | ExpId s -> [renameVar s]
     | BinaryOp (e1, op, e2) ->
       (codeGenExp e1) @ codeGenOp(op) @ (codeGenExp e2)
     | UnaryOp (op, e) ->
@@ -257,8 +270,8 @@ and codeGenTypeCall (typeC: typeCall) =
 
 and codeGenArgs (args: (string * typeCall option) list) =
   match args with
-    | (var, opType)::[] -> ["var_" ^ var] (* (var, [type]): (string, Some typeCall) *)
-    | (var, opType)::tl -> ("var_" ^ var)::","::(codeGenArgs tl)
+    | (var, opType)::[] -> [renameVar var] (* (var, [type]): (string, Some typeCall) *)
+    | (var, opType)::tl -> (renameVar var)::","::(codeGenArgs tl)
     | [] -> []
 
 and codeGenFor (forS:loopStat) =
@@ -269,7 +282,7 @@ and codeGenFor (forS:loopStat) =
       "while"::(codeGenExp cond) @ (":\n"::(codeGenIndentedStatList statList) @ ["\n"])
     | For (assign, cond, incr, statList) ->
       (codeGenAssignation assign) @ ["\n"] @
-      printIndent()::"while"::(pprintExp cond) @ [":\n"] @
+      printIndent()::"while"::(codeGenExp cond) @ [":\n"] @
       (codeGenIndentedStatList statList) @ ["\n"] @
       printIndent()::(codeGenAssignation incr) @ ["\n"]
 
@@ -365,52 +378,104 @@ and codeGenClauseListTail switchId (clauses: clause list) delayedDefault =
         | None -> []
       )
 
-      
 
-and pprintStructFieldDecList fieldList =
+(*
+  TODO: think about how struct will be implemented
+  dict could be a good idea except we don't know if we are reading (get)
+  or writing (get index)
+
+  IDEA: Since there are no external packages, it might be better to use dict
+*)
+
+and codeGenStructFieldDecList fieldList =
+  printIndent()::"def __init__(":: (codeGenFieldsAsArgs fieldList) @ ["):\n"] @
+  (increaseIndent();
+  let x =
+  (match fieldList with
+    | [] -> printIndent()::["pass"]
+    | _ -> codeGenSelfFieldsInStruct fieldList
+  ) in decreaseIndent(); x)
+
+and flattenFields (fieldList: structFieldDec list) =
   match fieldList with
-    | hd::tl -> (pprintStructFieldDec hd) @ (pprintStructFieldDecList tl)
     | [] -> []
-
-and pprintStructFieldDec (fields:structFieldDec) =
-  match fields.options with
-    (* FieldsBunch of string list * typeCall *)
-    | FieldsBunch (names, typeC) ->
-      let x =
-      increaseIndent();
-      printIndent()::(concat ", " names) :: (pprintTypeCall typeC) @ [";\n"]
-      in
-      decreaseIndent(); x
-
-and pprintAssignation (assign:assignation) =
-  match assign.options with
-    | Assign (assignees, expList) ->
-      (pprintSeparatedAssigneeList assignees ",") @
-      ["="] @ (pprintSeparatedExpList expList ",") @ [";\n"]
-    | DeclAssign (assigneeList, expList) ->
-      (pprintSeparatedAssigneeList assigneeList ",") @
-      [":="] @ (pprintSeparatedExpList expList ",") @ [";\n"]
-    | OpAssign (assignee, operator, exp) ->
-      (pprintAssignee assignee)@[operator]@(pprintExp exp) @ [";\n"]
-    | Increment (assignee, operator) ->
-      (pprintAssignee assignee) @ [operator] @ [";\n"]
-
-and pprintAssignee (assignee:assignee) =
-  match assignee.options with
-    | Object e -> pprintExp e
-
-and pprintSeparatedAssigneeList (assignees:assignee list) separator =
-  match assignees with
-    | hd::[] -> (pprintAssignee hd)
     | hd::tl ->
-      (pprintAssignee hd) @ [separator] @
-      (pprintSeparatedAssigneeList tl separator)
+      (match hd.options with
+        | FieldsBunch (args, t) -> (renameVarList args) @ (flattenFields tl)
+      )
+
+and codeGenFieldsAsArgs (fieldList: structFieldDec list) =
+  [concat ", " (List.map (fun x -> x ^ "=None") (flattenFields fieldList))]
+
+and codeGenSelfFieldsInStruct (fieldList: structFieldDec list) =
+  List.flatten(List.map (fun x -> printIndent()::"self."::x::"="::x::["\n"]) (flattenFields fieldList))
+
+and codeGenAssignation (assign:assignation) =
+  match assign.options with
+    | Assign (assigneeList, expList) ->
+      (codeGenSeparatedAssigneeList assigneeList ",") @ ["="] @
+      (codeGenSeparatedExpList expList ",") @ ["\n"]
+    | DeclAssign (assigneeList, expList) ->
+      (codeGenSeparatedAssigneeList assigneeList ",") @ ["="] @
+      (codeGenSeparatedExpList expList ",") @ ["\n"]
+    | OpAssign (assignee, operator, exp) ->
+      (codeGenAssignee assignee) @ (codeGenOp operator) @ (codeGenExpInPar exp) @ ["\n"]
+    | Increment (assignee, operator) ->
+      (codeGenAssignee assignee) @ (codeGenOp operator) @ ["\n"]
+
+and codeGenAssignee (assignee:assignee) =
+  match assignee.options with
+    | Object e -> codeGenExp e
+
+and codeGenSeparatedAssigneeList (assignees:assignee list) separator =
+  match assignees with
+    | hd::[] -> (codeGenAssignee hd)
+    | hd::tl ->
+      (codeGenAssignee hd) @ [separator] @
+      (codeGenSeparatedAssigneeList tl separator)
     | [] -> []
 
 (* TODO: THIS OPERATOR TRANSLATION *)
 and codeGenOp (op:string) =
+  [
   match op with
-    | _ -> [] (* List all possibilities and convert to python *)
+  | "+" -> "+"
+  | "-" -> "-"
+  | "*" -> "*"
+  | "/" -> "/"
+  | "%" -> "%"
+  | "&" -> "&"
+  | "|" -> "|"
+  | "^" -> "^"
+  | "<<" -> "<<"
+  | ">>" -> ">>"
+  | "&^" -> "& ~"
+  | "+=" -> "+="
+  | "-=" -> "-="
+  | "*=" -> "*="
+  | "/=" -> "/="
+  | "%=" -> "%="
+  | "|=" -> "|="
+  | "^=" -> "^="
+  | "<<=" -> "<<="
+  | ">>=" -> ">>="
+  | ":=" -> "="
+  | "&^=" -> "&=~"
+  | "&&" -> "and"
+  | "||" -> "or"
+(*| "<-" ->*)
+  | "++" -> "+=1"
+  | "--" -> "-=1"
+  | "==" -> "=="
+  | "<" -> "<"
+  | ">" -> ">"
+  | "=" -> "="
+  | "!" -> "not"
+  | "!=" -> "!="
+  | "<=" -> "<="
+  | ">=" -> ">="
+  | _ -> raise (GenerationError "unrecognized operator to translate in python")
+  ]
 
 (* trimming extra characters *)
 let replace input output =
@@ -423,7 +488,7 @@ let rec replaceMany fromList toList str =
       replace hd1 hd2 (replaceMany tl1 tl2 str)
     | _ -> str
 
-let prettyPrint ast =
+let codeGen ast =
   let fromList =  ["}"; "\n\n}"; "\t "; "\n;"; "( )"; " ;"; " ,"; ". "; " ."; ";;"; "\n "] in
   let toList = ["\n}"; "\n}"; "\t"; ";"; "()"; ";"; ","; "."; "."; ";"; "\n"] in
-  replaceMany fromList toList (pprintProg ast)
+  replaceMany fromList toList (codeGenProg ast)

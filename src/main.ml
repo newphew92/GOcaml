@@ -5,6 +5,7 @@ open Parser
 open Scanner
 open Lex
 open PrettyPrint
+open CodeGen
 (* open TypeCheck *)
 
 exception InputError of string
@@ -51,7 +52,7 @@ let input_file = Sys.argv.(1)
 
 (* flags *)
 
-let default_file = ref "a.gocaml.out"
+let default_file = ref "a.gocaml"
 
 let flag_o = ref false
 let flag_dst = ref false
@@ -71,7 +72,7 @@ for i = 2 to (Array.length Sys.argv - 1) do
         let () = print_string help_string in exit 1
 done
 
-let () = print_endline ("Compiling file " ^ input_file ^ " to " ^ !output_file)
+let () = print_endline ("Compiling file " ^ input_file ^ " to " ^ !output_file ^ ".py")
 
 (* load the program from file *)
 let load_file f =
@@ -122,18 +123,15 @@ let completely_weeded_ast = Weeder.weedAst ast
 (* TODO: change to typchecker call *)
 let annotated_ast = completely_weeded_ast
 
-(*
-  if you see that, you realize that we just made the typechecker always fail
-  unfortunately... the typechecker will only be ready in a few days, which will
-  be too late...
-*)
-let () =
-  print_endline "TypecheckError (unstable): the program might be ill-typed"
 
 (* pretty print *)
 let () =
-  print_endline "Due to unstable typechecker, we pretty print regardless of the typecheck.";
-  print_endline "For now only pretty printing is returned (-pptype is activated by default)";
-  let oc = open_out (!output_file ^ ".pretty") in
-  fprintf oc "%s\n" (PrettyPrint.prettyPrint annotated_ast);
-  close_out oc;
+  if !flag_pp then
+    let ppFile = open_out (!output_file ^ ".pretty") in
+    fprintf ppFile "%s\n" (PrettyPrint.prettyPrint annotated_ast);
+    close_out ppFile
+
+let () =
+  let mainFile = open_out (!output_file ^ ".py") in
+  fprintf mainFile "%s\n" (CodeGen.codeGen annotated_ast);
+  close_out mainFile;
