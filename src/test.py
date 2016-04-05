@@ -18,5 +18,6 @@ def go_fib ( go_a ) :
 	return go_a 
 
 
-#arguments from the console can only be passed as string
+# arguments from the console can only be passed as string
+# for now you need to force cast them in go
 go_main(*sys.argv[1:])

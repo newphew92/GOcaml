@@ -199,7 +199,7 @@ primary:
   | ID { { theType=None; options=ExpId $1 } }
   | constVal {$1}
   | type_cast {$1}
-  | FUNC LPAR id_list_with_types RPAR option(typeG) block { { theType=None; options=Lambda ($3, $5, $6) } } /* Function literal */
+  | FUNC LPAR id_list_with_types RPAR option(typeG) block { { theType=None; options=Lambda ($3, $5, $6, "") } } /* Function literal */
   | primary LSQPAR exp RSQPAR { { theType=None; options=ArrayElem ($1, $3) } } /* index element */
   | primary LSQPAR option(exp) COLON option(exp) RSQPAR { {theType=None; options=ArraySlice ($1, $3, $5) } } /* slices */
   | primary LPAR exp_list RPAR { { theType=None; options=FunctionCall ($1, $3) } } /* function call */

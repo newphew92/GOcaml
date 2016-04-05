@@ -96,7 +96,7 @@ and expOptions =
   | ArraySlice of exp * exp option * exp option
   | ObjectField of exp * string
   | FunctionCall of exp * exp list
-  | Lambda of (string * typeCall option) list * typeCall option * statement list
+  | Lambda of (string * typeCall option) list * typeCall option * statement list * string
   | TypeCast of typeCall * exp
 and typeCallOptions =
   | BuiltInType of string

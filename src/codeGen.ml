@@ -17,59 +17,56 @@ let printIndent () = concat " " !indent
 
 (* MULTILINE LAMBDA HELPERS *)
 
-type lambdaAlias = {alias: string; lambdaExp: exp}
-
-type lambdaStack = lambdaAlias list
-
-let (lambdaStack:lambdaStack ref) = ref []
-
-let lambdaId = ref 0
-
-let getLambdaUniqueId () =
-  let x = !lambdaId in lambdaId := x + 1; string_of_int x
-
-let switchId = ref 0
-
-let getSwitchUniqueId() =
-  let x = !switchId in switchId := x + 1; string_of_int x
-
-let generateLambdaAlias () =
-  "lambda" ^ getLambdaUniqueId()
-
-let rec accumulateLambdasInExp (exp:exp) =
+let rec getLambdasInExp (exp:exp) =
   match exp.options with
-  | BinaryOp (e1, op, e2) ->
-    accumulateLambdasInExp e1; accumulateLambdasInExp e2
-  | UnaryOp (op, e) ->
-    accumulateLambdasInExp e
-  | ArrayElem (e, indice) ->
-    accumulateLambdasInExp e; accumulateLambdasInExp indice
-  | ArraySlice (e, fstIndOp, sndIndOp) ->
-    accumulateLambdasInExp e;
-    accumulateLambdasInOptionalExp fstIndOp;
-    accumulateLambdasInOptionalExp sndIndOp
-  | ObjectField (objExp, field) -> accumulateLambdasInExp objExp
-  (* FunctionCall of exp * exp list *)
-  | FunctionCall (func, args) ->
-    accumulateLambdasInExp func;
-    List.iter accumulateLambdasInExp args
-  (* Lambda of (string * typeCall option) list * typeCall option * statement list *)
-  | TypeCast (toType, e) -> accumulateLambdasInExp e
-  | Lambda (args, opFuncType, statList) ->
-    lambdaStack := {alias=getLambdaUniqueId(); lambdaExp=exp}::!lambdaStack
-  | _ -> ()
+    | BinaryOp (e1, op, e2) -> getLambdasInExp e1 @ getLambdasInExp e2
+    | UnaryOp (op, e) -> getLambdasInExp e
+    | ArrayElem (e, indice) -> (getLambdasInExp e @ getLambdasInExp indice)
+    | ArraySlice (e, fstIndOp, sndIndOp) ->
+      getLambdasInExp e @
+      getLambdasInOptionalExp fstIndOp @
+      getLambdasInOptionalExp sndIndOp
+    | ObjectField (objExp, field) -> getLambdasInExp objExp
+    (* FunctionCall of exp * exp list *)
+    | FunctionCall (func, args) ->
+      getLambdasInExp func @
+      getLambdasInExpList args
+    (* Lambda of (string * typeCall option) list * typeCall option * statement list *)
+    | TypeCast (toType, e) -> getLambdasInExp e
+    | Lambda (args, opFuncType, statList, alias) -> [exp]
+    | _ -> []
 
-and accumulateLambdasInOptionalExp expOp =
-  match expOp with
-    | None -> ()
-    | Some e -> accumulateLambdasInExp e
+and getLambdasInOptionalExp opExp =
+  match opExp with
+    | None -> []
+    | Some e -> getLambdasInExp e
 
-let popLambdaAlias () =
-  match !lambdaStack with
-    | [] -> raise (LambdaAliasError "lambda alias stack is empty")
-    | hd::tl ->
-      lambdaStack := tl;
-      hd.alias
+and getLambdasInExpList expList =
+  match expList with
+    | [] -> []
+    | hd::tl -> getLambdasInExp hd @ getLambdasInExpList tl
+
+let renameVar varName =
+  "go_" ^ varName
+
+let renameVarList varList =
+  List.map renameVar varList
+
+let rec codeGenArgs (args: (string * typeCall option) list) =
+  match args with
+    | (var, opType)::[] -> [renameVar var] (* (var, [type]): (string, Some typeCall) *)
+    | (var, opType)::tl -> (renameVar var)::","::(codeGenArgs tl)
+    | [] -> []
+
+
+(* SWITCH VAR NAME FOR EXP *)
+
+let switchUniqueId = ref 0
+
+let getSwitchUniqueId () =
+ let id = !switchUniqueId in
+  switchUniqueId := !switchUniqueId + 1;
+  "switch_container" ^ (string_of_int id)
 
 (*
   CODE GENERATION
@@ -82,7 +79,7 @@ let fn_for_rune_cast =
 
 let rec codeGenProg (ast:ast) =
   concat " " (
-    "from __future__ import print_function\n" ::
+    "from __future__ import print_function\n\n" ::
     "import sys\n\n" ::
     fn_for_rune_cast ::
     (codeGenDecList ast.declarations) @ ["\n"] @
@@ -91,43 +88,28 @@ let rec codeGenProg (ast:ast) =
     [renameVar "main(*sys.argv[1:])"]
     )
 
-and renameVar varName =
-  "go_" ^ varName
+and declareLambdaAsDef (expLambda:exp) =
+  match expLambda.options with
+    | Lambda (args, _, statList, alias) ->
+      "\n"::printIndent()::"def"::alias::"("::(codeGenArgs args)@["):"] @
+      codeGenIndentedStatList statList
+    | _ -> raise (GenerationError "critical error in aliasing lambda")
 
-and renameVarList varList =
-  List.map renameVar varList
-
-and declareStackLambdas () =
-  traverseAndWriteLambdas !lambdaStack
-
-and traverseAndWriteLambdas stack =
-  match stack with
+and declareLambdaListAsDef expLambdaList =
+  match expLambdaList with
     | [] -> []
-    | alias::next ->
-      (match alias.lambdaExp.options with
-        | Lambda (args, opFuncType, statList) ->
-          printIndent()::["def"; alias.alias; "("] @ (codeGenArgs args) @ [")"] @ [":\n"] @
-          (codeGenIndentedStatList statList) @ ["\n"]
-        | _ ->
-          raise (LambdaAliasError "an exp which is not a lambda was stored in stack")
-        ) @
-      traverseAndWriteLambdas next
+    | hd::tl -> declareLambdaAsDef hd @ declareLambdaListAsDef tl
 
-and deleteStackLambdas () =
-  traverseAndDeleteLambdas !lambdaStack
+and setLambdaNone (expLambda:exp) =
+  match expLambda.options with
+    | Lambda (args, _, statList, alias) ->
+      alias::"="::["None\n"]
+    | _ -> raise (GenerationError "critical error in aliasing lambda")
 
-and traverseAndDeleteLambdas stack =
-  match stack with
+and setLambdaListNone expLambdaList =
+  match expLambdaList with
     | [] -> []
-    | alias::next ->
-      (match alias.lambdaExp.options with
-        | Lambda (args, opFuncType, statList) ->
-          printIndent()::[alias.alias; "= None\n"] @
-          (codeGenIndentedStatList statList) @ ["\n"]
-        | _ ->
-          raise (LambdaAliasError "an exp which is not a lambda was stored in stack")
-        ) @
-      traverseAndDeleteLambdas next
+    | hd::tl -> setLambdaNone hd @ setLambdaListNone tl
 
 (* decList: dec list *)
 and codeGenDecList decList =
@@ -148,10 +130,11 @@ and codeGenDec (decl:dec) =
     | VarsD (vars, tc) -> []
     (* VarsDandAssign of string list * typeCall option * exp list *)
     | VarsDandAssign (vars, opType, expList) ->
-      List.iter accumulateLambdasInExp expList;
-      declareStackLambdas() @
-      (concat ", " (renameVarList vars)) :: "=" :: (codeGenSeparatedExpList expList ",") @ ["\n"] @
-      deleteStackLambdas ()
+      let lambdas = getLambdasInExpList expList in
+      declareLambdaListAsDef (lambdas) @
+      (concat ", " (renameVarList vars)) :: "=" ::
+      (codeGenSeparatedExpList expList ",") @ ["\n"] @
+      setLambdaListNone lambdas
     (* TypeD of typeDec *)
     | TypeD td -> (codeGenTypeDec td)
 
@@ -208,11 +191,27 @@ and codeGenInlineStat (stat:statement) =
     | DeclareS dc -> (codeGenDec dc)
     | ForS loop -> (codeGenFor loop)
     | IfS (s, cond, ifStat, elseStat) -> (codeGenIf stat)
-    | PrintS e -> "print(" :: (codeGenSeparatedExpList e ", ") @ [", end='')\n"]
-    | PrintlnS e -> "print(" :: (codeGenSeparatedExpList e ", ") @ [")\n"]
-    | ReturnS e -> "return"::(codeGenOptionalExp e) @ ["\n"]
+    | PrintS e ->
+      let lambdas = getLambdasInExpList e in
+      declareLambdaListAsDef (lambdas) @
+      "print(" :: (codeGenSeparatedExpList e ", ") @ [", end='')\n"] @
+      setLambdaListNone lambdas
+    | PrintlnS e ->
+      let lambdas = getLambdasInExpList e in
+      declareLambdaListAsDef (lambdas) @
+      "print(" :: (codeGenSeparatedExpList e ", ") @ [")\n"] @
+      setLambdaListNone lambdas
+    | ReturnS e ->
+      let lambdas = getLambdasInOptionalExp e in
+      declareLambdaListAsDef (lambdas) @
+      "return"::(codeGenOptionalExp e) @ ["\n"] @
+      setLambdaListNone lambdas
     | SwitchS (s, exp, clauses) -> codeGenSwitch stat
-    | ExpS e -> codeGenExp e
+    | ExpS e ->
+      let lambdas = getLambdasInExp e in
+      declareLambdaListAsDef (lambdas) @
+      codeGenExp e @
+      setLambdaListNone lambdas
     | AssignS a -> codeGenAssignation a
 
 and codeGenExpInPar (exp:exp) =
@@ -245,8 +244,8 @@ and codeGenExp (exp:exp) =
     | FunctionCall (func, args) ->
       (codeGenExp func) @ ["("] @ (codeGenSeparatedExpList args ",") @ [")"]
     (* Lambda of (string * typeCall option) list * typeCall option * statement list *)
-    | Lambda (args, opFuncType, statList) ->
-      [popLambdaAlias()]
+    | Lambda (args, opFuncType, statList, alias) ->
+      [alias]
     | TypeCast (toType, exp) ->
       (codeGenTypeCall toType) @
       ["("] @ (codeGenExp exp) @ [")"]
@@ -268,23 +267,24 @@ and codeGenTypeCall (typeC: typeCall) =
       )
     | _ -> raise (GenerationError "codeGenTypecall should only be used by cast")
 
-and codeGenArgs (args: (string * typeCall option) list) =
-  match args with
-    | (var, opType)::[] -> [renameVar var] (* (var, [type]): (string, Some typeCall) *)
-    | (var, opType)::tl -> (renameVar var)::","::(codeGenArgs tl)
-    | [] -> []
-
 and codeGenFor (forS:loopStat) =
   match forS.options with
     | InfLoop statList ->
       "while True:\n"::(codeGenIndentedStatList statList) @ ["\n"]
     | While (cond, statList) ->
-      "while"::(codeGenExp cond) @ (":\n"::(codeGenIndentedStatList statList) @ ["\n"])
+      let lambdas = getLambdasInExp cond in
+      declareLambdaListAsDef (lambdas) @ printIndent()::
+      "while"::(codeGenExp cond) @
+      (":\n"::(codeGenIndentedStatList statList) @ ["\n"]) @
+      setLambdaListNone lambdas
     | For (assign, cond, incr, statList) ->
+      let lambdas = getLambdasInExp cond in
+      declareLambdaListAsDef (lambdas) @ printIndent()::
       (codeGenAssignation assign) @ ["\n"] @
       printIndent()::"while"::(codeGenExp cond) @ [":\n"] @
       (codeGenIndentedStatList statList) @ ["\n"] @
-      printIndent()::(codeGenAssignation incr) @ ["\n"]
+      printIndent()::(codeGenAssignation incr) @ ["\n"] @
+      setLambdaListNone lambdas
 
 and codeGenIf (ifS:statement) =
   match ifS.options with
@@ -319,7 +319,7 @@ match ifS.options with
 and codeGenSwitch (switchS:statement) =
   match switchS.options with
     | SwitchS (statOp, Some e, clauses) ->
-      let switchId = ("switchContainer " ^ getSwitchUniqueId()) in
+      let switchId = getSwitchUniqueId () in
       printIndent()::(codeGenOptionalInlineStat statOp) @ ["\n"] @
       switchId :: "=" :: (codeGenExp e) @
       (codeGenClauseList clauses switchId) @ ["}\n"]
@@ -463,7 +463,7 @@ and codeGenOp (op:string) =
   | "&^=" -> "&=~"
   | "&&" -> "and"
   | "||" -> "or"
-(*| "<-" ->*)
+(*| "<-" -> "?"*)
   | "++" -> "+=1"
   | "--" -> "-=1"
   | "==" -> "=="

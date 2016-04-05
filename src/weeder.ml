@@ -15,6 +15,15 @@ open String
 exception WeederSyntax of string
 
 (*
+  ALIASING LAMBDAS
+*)
+
+let lambdaId = ref 0
+
+let getLambdaUniqueId () =
+  let x = !lambdaId in lambdaId := x + 1; "lambda" ^ (string_of_int x)
+
+(*
   TYPE ALIAS HELPERS
 *)
 
@@ -423,11 +432,12 @@ and weedExp (ex:exp) inLoop inFuncBlock =
           )
       (* args: (string * string option) list,
       fnt: typeCall option (function type), bloc: statement list *)
-      | Lambda (args, fnt, bloc) ->
+      | Lambda (args, fnt, bloc, emptyAlias) ->
         Lambda (
           args,
           weedOptionalTypeCall fnt inLoop inFuncBlock,
-          List.map (fun x -> weedStatement x inLoop true ) bloc
+          List.map (fun x -> weedStatement x inLoop true ) bloc,
+          getLambdaUniqueId ()
           )
       (* tp: string (type), e: exp *)
       | TypeCast (tp, e) ->
