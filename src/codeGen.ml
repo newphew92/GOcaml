@@ -347,7 +347,7 @@ and codeGenSwitch (switchS:statement) =
       let switchId = getSwitchUniqueId () in
       printIndent()::(codeGenOptionalInlineStat statOp) @ ["\n"] @
       declareLambdaListAsDef lambdaInExp @
-      switchId :: "=" :: (codeGenExp e) @
+      printIndent():: switchId :: "=" :: (codeGenExp e) @ ["\n"] @
       setLambdaListNone lambdaInExp @
       declareLambdaListAsDef lambdasInClauses @
       (codeGenClauseList clauses switchId) @ ["\n"] @
