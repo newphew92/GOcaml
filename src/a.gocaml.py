@@ -1,20 +1,27 @@
 from __future__ import print_function
+
 import sys
 
 def rune_to_string(r):
 	return chr(r) if isinstance(r, int) else r
-class go_point (object): 
-	def __init__( go_x=None, go_y=None ):
-		self.go_x = go_x 
-		self.go_y = go_y 
+def go_main ( go_a ) :
+	return go_a + 1 
+	
+	go_v = 0 
 
-def main () :
-	go_f = go_fib 
-	print( go_f (),  go_f (),  go_f (),  go_f (),  go_f () )
-	print( 2 + 2, end='')
+	if go_v < 1 :
+		print( "v is very small", end='')
+	else:
+		print( "what just happened", end='')
+	
+	
+	if go_true :
+		return 
+	elif - 2 > 1 :
+		print( "that 's getting weird", end='')
+		return 
 
-def fib () :
-	return 1 
 
-
-main(*sys.argv[1:])
+# arguments from the console can only be passed as string
+# for now you need to force cast them in go
+go_main(*sys.argv[1:])

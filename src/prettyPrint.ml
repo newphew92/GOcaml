@@ -135,7 +135,7 @@ and pprintExp (exp:exp) =
     | FunctionCall (func, args) ->
       (pprintExp func) @ ["("] @ (pprintSeparatedExpList args ",") @ [")"] @ (printTheType exp.theType)
     (* Lambda of (string * typeCall option) list * typeCall option * statement list *)
-    | Lambda (args, opFuncType, statList) ->
+    | Lambda (args, opFuncType, statList, alias) ->
       "func("::(pprintArgs args) @ [")"] @
       (pprintOptionalTypeCall opFuncType) @
       ["{\n"] @ (pprintIndentedStatList statList) @

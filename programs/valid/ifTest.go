@@ -13,5 +13,6 @@ func main(a int) {return a + 1
     return
   } else if -2 > 1 {
     print ("that 's getting weird")
+    return
   } else {}
 }

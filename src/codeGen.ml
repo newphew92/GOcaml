@@ -286,11 +286,26 @@ and codeGenFor (forS:loopStat) =
       printIndent()::(codeGenAssignation incr) @ ["\n"] @
       setLambdaListNone lambdas
 
+and getLambdasInIfsCond (ifS:statement) =
+  match ifS.options with
+    | IfS (opStat, cond, ifStats, elseStats) ->
+      (getLambdasInExp cond) @ (getLambdasInElifsCond elseStats)
+    | _ -> raise (GenerationError "critical error in recovering cond lambas out of if")
+
+and getLambdasInElifsCond elifS =
+  match elifS with
+  | {theType=t; options=IfS (None, elifCond, elifStats, finalElseStats)}::[] ->
+    (getLambdasInExp elifCond) @ (getLambdasInElifsCond finalElseStats)
+  | _ -> []
+
 and codeGenIf (ifS:statement) =
   match ifS.options with
     | IfS (opStat, cond, ifStats, elseStats) ->
-      printIndent()::(codeGenOptionalInlineStat opStat) @
-      printIndent()::"if"::(codeGenExp cond) @ [":"] @
+      let x = getLambdasInIfsCond ifS in
+      "\n"::
+      printIndent()::(codeGenOptionalInlineStat opStat) @ ["\n"] @
+      (declareLambdaListAsDef x) @
+      printIndent()::"if"::(codeGenExp cond) @ [":\n"] @
       (codeGenIndentedStatList ifStats) @
       (match elseStats with
         | [] -> [] (* case: no else statement *)
@@ -298,14 +313,13 @@ and codeGenIf (ifS:statement) =
         | ({theType=t; options=IfS (None, elifCond, elifStats, finalElseStats)} as el)::[] ->
           codeGenElif el
         | _ -> printIndent()::"else:\n"::(codeGenIndentedStatList elseStats)
-      )
+      ) @ setLambdaListNone x
     | _ -> raise (GenerationError "catastrophic error on in if statement")
 
 and codeGenElif (ifS:statement) =
 match ifS.options with
-  | IfS (opStat, cond, ifStats, elseStats) ->
-    printIndent()::(codeGenOptionalInlineStat opStat) @
-    printIndent()::"elif"::(codeGenExp cond) @ [":"] @
+  | IfS (None, cond, ifStats, elseStats) ->
+    printIndent()::"elif"::(codeGenExp cond) @ [":\n"] @
     (codeGenIndentedStatList ifStats) @
     (match elseStats with
       | [] -> [] (* case: no else statement *)
@@ -316,21 +330,39 @@ match ifS.options with
     )
   | _ -> raise (GenerationError "catastrophic error on in elif statement")
 
+and getLambdasInClauses (clauses:clause list) =
+  match clauses with
+    | [] -> []
+    | hd::tl ->
+      match hd.options with
+        | OptionSw (condList, _) ->
+          getLambdasInExpList condList @ getLambdasInClauses tl
+        | DefaultSw _ -> getLambdasInClauses tl
+
 and codeGenSwitch (switchS:statement) =
   match switchS.options with
     | SwitchS (statOp, Some e, clauses) ->
+      let lambdasInClauses = getLambdasInClauses clauses in
+      let lambdaInExp = getLambdasInExp e in
       let switchId = getSwitchUniqueId () in
       printIndent()::(codeGenOptionalInlineStat statOp) @ ["\n"] @
+      declareLambdaListAsDef lambdaInExp @
       switchId :: "=" :: (codeGenExp e) @
-      (codeGenClauseList clauses switchId) @ ["}\n"]
+      setLambdaListNone lambdaInExp @
+      declareLambdaListAsDef lambdasInClauses @
+      (codeGenClauseList clauses switchId) @ ["\n"] @
+      setLambdaListNone lambdasInClauses
     | SwitchS (statOp, None, clauses) ->
-     printIndent()::(codeGenOptionalInlineStat statOp) @ ["\n"] @
-     (codeGenClauseList clauses "True") @ ["\n"]
-     (* An explanation is needed here:
-        To avoid Python behavior where non-empty objects are evaluated to True
-        we do not get the boolean conversion of each object, but we force
-        a comparison with True
-     *)
+      let lambdasInClauses = getLambdasInClauses clauses in
+      printIndent()::(codeGenOptionalInlineStat statOp) @ ["\n"] @
+      declareLambdaListAsDef lambdasInClauses @
+      (* An explanation is needed here:
+         To avoid Python behavior where non-empty objects are evaluated to True
+         we do not get the boolean conversion of each object, but we force
+         a comparison with True
+      *)
+      (codeGenClauseList clauses "True") @ ["\n"] @
+      setLambdaListNone lambdasInClauses
    | _ -> raise (GenerationError "catastrophic error on switch statement")
 
 (*
@@ -379,14 +411,6 @@ and codeGenClauseListTail switchId (clauses: clause list) delayedDefault =
       )
 
 
-(*
-  TODO: think about how struct will be implemented
-  dict could be a good idea except we don't know if we are reading (get)
-  or writing (get index)
-
-  IDEA: Since there are no external packages, it might be better to use dict
-*)
-
 and codeGenStructFieldDecList fieldList =
   printIndent()::"def __init__(":: (codeGenFieldsAsArgs fieldList) @ ["):\n"] @
   (increaseIndent();
@@ -413,15 +437,40 @@ and codeGenSelfFieldsInStruct (fieldList: structFieldDec list) =
 and codeGenAssignation (assign:assignation) =
   match assign.options with
     | Assign (assigneeList, expList) ->
+      let lambdasInExp = getLambdasInExpList expList in
+      let lambdasInAssigneeList = getLambdasInAssigneeList assigneeList in
+      declareLambdaListAsDef (lambdasInAssigneeList @ lambdasInExp) @
       (codeGenSeparatedAssigneeList assigneeList ",") @ ["="] @
-      (codeGenSeparatedExpList expList ",") @ ["\n"]
+      (codeGenSeparatedExpList expList ",") @ ["\n"] @
+      setLambdaListNone (lambdasInAssigneeList @ lambdasInExp)
     | DeclAssign (assigneeList, expList) ->
+      let lambdasInExp = getLambdasInExpList expList in
+      let lambdasInAssigneeList = getLambdasInAssigneeList assigneeList in
+      declareLambdaListAsDef (lambdasInAssigneeList @ lambdasInExp) @
       (codeGenSeparatedAssigneeList assigneeList ",") @ ["="] @
-      (codeGenSeparatedExpList expList ",") @ ["\n"]
+      (codeGenSeparatedExpList expList ",") @ ["\n"] @
+      setLambdaListNone (lambdasInAssigneeList @ lambdasInExp)
     | OpAssign (assignee, operator, exp) ->
-      (codeGenAssignee assignee) @ (codeGenOp operator) @ (codeGenExpInPar exp) @ ["\n"]
+      let lambdasInExp = getLambdasInExp exp in
+      let lambdasInAssignee = getLambdasInAssignee assignee in
+      declareLambdaListAsDef (lambdasInAssignee @ lambdasInExp) @
+      (codeGenAssignee assignee) @ (codeGenOp operator) @
+      (codeGenExpInPar exp) @ ["\n"] @
+      setLambdaListNone (lambdasInAssignee @ lambdasInExp)
     | Increment (assignee, operator) ->
-      (codeGenAssignee assignee) @ (codeGenOp operator) @ ["\n"]
+      let lambdasInAssignee = getLambdasInAssignee assignee in
+      declareLambdaListAsDef lambdasInAssignee @
+      (codeGenAssignee assignee) @ (codeGenOp operator) @ ["\n"] @
+      setLambdaListNone lambdasInAssignee
+
+and getLambdasInAssigneeList assigneeList =
+  match assigneeList with
+    | [] -> []
+    | hd::tl ->  getLambdasInAssignee hd  @ getLambdasInAssigneeList tl
+
+and getLambdasInAssignee (assignee:assignee) =
+  match assignee.options with
+    | Object e -> getLambdasInExp e
 
 and codeGenAssignee (assignee:assignee) =
   match assignee.options with
@@ -489,6 +538,6 @@ let rec replaceMany fromList toList str =
     | _ -> str
 
 let codeGen ast =
-  let fromList =  ["}"; "\n\n}"; "\t "; "\n;"; "( )"; " ;"; " ,"; ". "; " ."; ";;"; "\n "] in
-  let toList = ["\n}"; "\n}"; "\t"; ";"; "()"; ";"; ","; "."; "."; ";"; "\n"] in
+  let fromList =  ["}"; "\n\n}"; "\t "; "\n;"; "( )"; " ;"; " ,"; ". "; " ."; ";;"; "\n "; "~ "] in
+  let toList = ["\n}"; "\n}"; "\t"; ";"; "()"; ";"; ","; "."; "."; ";"; "\n"; "~"] in
   replaceMany fromList toList (codeGenProg ast)

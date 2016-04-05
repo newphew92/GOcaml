@@ -1,10 +1,6 @@
 ### Starting build.
 # Target: main.ml.depends, tags: { debug, extension:ml, file:main.ml, ocaml, ocamldep, package(core,ppx_jane), package(str), quiet, thread, traverse }
 ocamlfind ocamldep -package core,ppx_jane -package str -modules main.ml > main.ml.depends # cached
-# Target: ast.ml.depends, tags: { debug, extension:ml, file:ast.ml, ocaml, ocamldep, package(core,ppx_jane), package(str), quiet, thread, traverse }
-ocamlfind ocamldep -package core,ppx_jane -package str -modules ast.ml > ast.ml.depends # cached
-# Target: ast.cmo, tags: { byte, compile, debug, extension:cmo, extension:ml, file:ast.cmo, file:ast.ml, implem, ocaml, package(core,ppx_jane), package(str), quiet, thread, traverse }
-ocamlfind ocamlc -c -g -thread -package core,ppx_jane -package str -o ast.cmo ast.ml # cached
 # Target: codeGen.ml.depends, tags: { debug, extension:ml, file:codeGen.ml, ocaml, ocamldep, package(core,ppx_jane), package(str), quiet, thread, traverse }
 ocamlfind ocamldep -package core,ppx_jane -package str -modules codeGen.ml > codeGen.ml.depends
 # Target: lex.ml.depends, tags: { debug, extension:ml, file:lex.ml, ocaml, ocamldep, package(core,ppx_jane), package(str), quiet, thread, traverse }
@@ -34,6 +30,8 @@ findlib: [WARNING] Interface main.cmi occurs in several directories: ., /home/ol
 findlib: [WARNING] Interface topdirs.cmi occurs in several directories: /home/olivier/.opam/4.02.3/lib/ocaml/compiler-libs, /home/olivier/.opam/4.02.3/lib/ocaml
 # Target: main.cmo, tags: { byte, compile, debug, extension:cmo, extension:ml, file:main.cmo, file:main.ml, implem, ocaml, package(core,ppx_jane), package(str), quiet, thread, traverse }
 ocamlfind ocamlc -c -g -thread -package core,ppx_jane -package str -o main.cmo main.ml # cached
+# Target: ast.ml.depends, tags: { debug, extension:ml, file:ast.ml, ocaml, ocamldep, package(core,ppx_jane), package(str), quiet, thread, traverse }
+ocamlfind ocamldep -package core,ppx_jane -package str -modules ast.ml > ast.ml.depends # cached
 # Target: ast.cmx, tags: { compile, debug, extension:cmx, extension:ml, file:ast.cmx, file:ast.ml, implem, native, ocaml, package(core,ppx_jane), package(str), quiet, thread, traverse }
 ocamlfind ocamlopt -c -g -thread -package core,ppx_jane -package str -o ast.cmx ast.ml # cached
 # Target: scanner.ml.depends, tags: { debug, extension:ml, file:scanner.ml, ocaml, ocamldep, package(core,ppx_jane), package(str), quiet, thread, traverse }
@@ -52,13 +50,7 @@ ocamlfind ocamlopt -c -g -thread -package core,ppx_jane -package str -o codeGen.
 findlib: [WARNING] Interface main.cmi occurs in several directories: ., /home/olivier/.opam/4.02.3/lib/ocaml/compiler-libs
 findlib: [WARNING] Interface topdirs.cmi occurs in several directories: /home/olivier/.opam/4.02.3/lib/ocaml/compiler-libs, /home/olivier/.opam/4.02.3/lib/ocaml
 # Target: main.cmx, tags: { compile, debug, extension:cmx, extension:ml, file:main.cmx, file:main.ml, implem, native, ocaml, package(core,ppx_jane), package(str), quiet, thread, traverse }
-ocamlfind ocamlopt -c -g -thread -package core,ppx_jane -package str -o main.cmx main.ml
-+ ocamlfind ocamlopt -c -g -thread -package core,ppx_jane -package str -o main.cmx main.ml
-findlib: [WARNING] Interface main.cmi occurs in several directories: ., /home/olivier/.opam/4.02.3/lib/ocaml/compiler-libs
-findlib: [WARNING] Interface topdirs.cmi occurs in several directories: /home/olivier/.opam/4.02.3/lib/ocaml/compiler-libs, /home/olivier/.opam/4.02.3/lib/ocaml
-File "main.ml", line 82, characters 12-25:
-Warning 3: deprecated: String.create
-Use Bytes.create instead.
+ocamlfind ocamlopt -c -g -thread -package core,ppx_jane -package str -o main.cmx main.ml # cached
 # Target: main.native, tags: { debug, dont_link_with, extension:native, file:main.native, link, native, ocaml, package(core,ppx_jane), package(str), program, quiet, thread, traverse }
 ocamlfind ocamlopt -linkpkg -g -thread -package core,ppx_jane -package str ast.cmx codeGen.cmx scanner.cmx lex.cmx prettyPrint.cmx weeder.cmx main.cmx -o main.native
 + ocamlfind ocamlopt -linkpkg -g -thread -package core,ppx_jane -package str ast.cmx codeGen.cmx scanner.cmx lex.cmx prettyPrint.cmx weeder.cmx main.cmx -o main.native
