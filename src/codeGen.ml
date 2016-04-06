@@ -92,7 +92,7 @@ and declareLambdaAsDef (expLambda:exp) =
   match expLambda.options with
     | Lambda (args, _, statList, alias) ->
       "\n"::printIndent()::"def"::alias::"("::(codeGenArgs args)@["):"] @
-      codeGenIndentedStatList statList
+      codeGenIndentedStatList statList @ ["\n"]
     | _ -> raise (GenerationError "critical error in aliasing lambda")
 
 and declareLambdaListAsDef expLambdaList =
@@ -103,7 +103,7 @@ and declareLambdaListAsDef expLambdaList =
 and setLambdaNone (expLambda:exp) =
   match expLambda.options with
     | Lambda (args, _, statList, alias) ->
-      alias::"="::["None\n"]
+      printIndent()::alias::"="::["None\n"]
     | _ -> raise (GenerationError "critical error in aliasing lambda")
 
 and setLambdaListNone expLambdaList =
@@ -283,7 +283,7 @@ and codeGenFor (forS:loopStat) =
       (codeGenAssignation assign) @ ["\n"] @
       printIndent()::"while"::(codeGenExp cond) @ [":\n"] @
       (codeGenIndentedStatList statList) @ ["\n"] @
-      printIndent()::(codeGenAssignation incr) @ ["\n"] @
+      printIndent()::"\t"::(codeGenAssignation incr) @ ["\n"] @
       setLambdaListNone lambdas
 
 and getLambdasInIfsCond (ifS:statement) =
@@ -345,7 +345,7 @@ and codeGenSwitch (switchS:statement) =
       let lambdasInClauses = getLambdasInClauses clauses in
       let lambdaInExp = getLambdasInExp e in
       let switchId = getSwitchUniqueId () in
-      printIndent()::(codeGenOptionalInlineStat statOp) @ ["\n"] @
+      (codeGenOptionalInlineStat statOp) @ ["\n"] @
       declareLambdaListAsDef lambdaInExp @
       printIndent():: switchId :: "=" :: (codeGenExp e) @ ["\n"] @
       setLambdaListNone lambdaInExp @
@@ -354,8 +354,8 @@ and codeGenSwitch (switchS:statement) =
       setLambdaListNone lambdasInClauses
     | SwitchS (statOp, None, clauses) ->
       let lambdasInClauses = getLambdasInClauses clauses in
-      printIndent()::(codeGenOptionalInlineStat statOp) @ ["\n"] @
-      declareLambdaListAsDef lambdasInClauses @
+      (codeGenOptionalInlineStat statOp) @ ["\n"] @
+      printIndent()::declareLambdaListAsDef lambdasInClauses @
       (* An explanation is needed here:
          To avoid Python behavior where non-empty objects are evaluated to True
          we do not get the boolean conversion of each object, but we force
@@ -453,8 +453,8 @@ and codeGenAssignation (assign:assignation) =
     | OpAssign (assignee, operator, exp) ->
       let lambdasInExp = getLambdasInExp exp in
       let lambdasInAssignee = getLambdasInAssignee assignee in
-      declareLambdaListAsDef (lambdasInAssignee @ lambdasInExp) @
-      (codeGenAssignee assignee) @ (codeGenOp operator) @
+      declareLambdaListAsDef (lambdasInAssignee @ lambdasInExp) @ ["\n"] @
+      printIndent()::(codeGenAssignee assignee) @ (codeGenOp operator) @
       (codeGenExpInPar exp) @ ["\n"] @
       setLambdaListNone (lambdasInAssignee @ lambdasInExp)
     | Increment (assignee, operator) ->

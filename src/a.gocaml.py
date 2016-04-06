@@ -4,39 +4,22 @@ import sys
 
 def rune_to_string(r):
 	return chr(r) if isinstance(r, int) else r
-def go_main () :
-	go_c = go_pick () 
-		
-	switch_container0 = go_c 
-	if switch_container0 == ord('&') :
-		go_esc = "&amp;" 
+def go_main ( go_a ) :
+	return go_a + 1 
+	
+	go_v = 0 
 
-	elif switch_container0 == ord('\'') :
-		go_esc = "&apos;" 
-
-	elif switch_container0 == ord('<') :
-		go_esc = "&lt;" 
-
-	elif switch_container0 == ord('>') :
-		go_esc = "&gt;" 
-
-	elif switch_container0 == ord('"') :
-		go_esc = "&quot;" 
-
+	if go_v < 1 :
+		print( "v is very small", end='')
 	else:
-		go_esc = go_panic ( "unrecognized escape character" ) 
-
-
-	print( go_esc )
-
-def go_panic ( go_s ) :
-	while True:
-		print( go_s, end='')
-
-
-def go_pick () :
-	print( "I just give you a character" )
-	return ord('>') 
+		print( "what just happened", end='')
+	
+	
+	if go_true :
+		return 
+	elif - 2 > 1 :
+		print( "that 's getting weird", end='')
+		return 
 
 
 # arguments from the console can only be passed as string
