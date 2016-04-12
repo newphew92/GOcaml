@@ -91,7 +91,7 @@ let rec codeGenProg (ast:ast) =
 and declareLambdaAsDef (expLambda:exp) =
   match expLambda.options with
     | Lambda (args, _, statList, alias) ->
-      "\n"::printIndent()::"def"::alias::"("::(codeGenArgs args)@["):"] @
+      "\n"::printIndent()::"def"::alias::"("::(codeGenArgs args)@["):\n"] @
       codeGenIndentedStatList statList @ ["\n"]
     | _ -> raise (GenerationError "critical error in aliasing lambda")
 
@@ -189,8 +189,8 @@ and codeGenInlineStat (stat:statement) =
     | BreakS -> ["break\n"]
     | ContinueS -> ["continue\n"]
     | DeclareS dc -> (codeGenDec dc)
-    | ForS loop -> (codeGenFor loop)
-    | IfS (s, cond, ifStat, elseStat) -> (codeGenIf stat)
+    | ForS loop -> "\n" :: (codeGenFor loop)
+    | IfS (s, cond, ifStat, elseStat) -> "\n"::(codeGenIf stat)
     | PrintS e ->
       let lambdas = getLambdasInExpList e in
       declareLambdaListAsDef (lambdas) @
@@ -206,7 +206,7 @@ and codeGenInlineStat (stat:statement) =
       declareLambdaListAsDef (lambdas) @
       "return"::(codeGenOptionalExp e) @ ["\n"] @
       setLambdaListNone lambdas
-    | SwitchS (s, exp, clauses) -> codeGenSwitch stat
+    | SwitchS (s, exp, clauses) -> "\n" :: codeGenSwitch stat
     | ExpS e ->
       let lambdas = getLambdasInExp e in
       declareLambdaListAsDef (lambdas) @
@@ -225,7 +225,7 @@ and codeGenExp (exp:exp) =
     | HexaConst s -> [s]
     | BoolConst s -> [capitalize s]
     | StringConst s -> [s]
-    | RawStringConst s -> ["r" ^ s]
+    | RawStringConst s -> ["r" ^ "\"" ^ (String.sub s 1 (String.length s - 2)) ^ "\""]
     | RuneConst s -> ["ord(" ^ s ^")"]
     | ExpId s -> [renameVar s]
     | BinaryOp (e1, op, e2) ->
@@ -270,7 +270,7 @@ and codeGenTypeCall (typeC: typeCall) =
 and codeGenFor (forS:loopStat) =
   match forS.options with
     | InfLoop statList ->
-      "while True:\n"::(codeGenIndentedStatList statList) @ ["\n"]
+      printIndent()::"while True:\n"::(codeGenIndentedStatList statList) @ ["\n"]
     | While (cond, statList) ->
       let lambdas = getLambdasInExp cond in
       declareLambdaListAsDef (lambdas) @ printIndent()::
@@ -279,11 +279,10 @@ and codeGenFor (forS:loopStat) =
       setLambdaListNone lambdas
     | For (assign, cond, incr, statList) ->
       let lambdas = getLambdasInExp cond in
-      declareLambdaListAsDef (lambdas) @ printIndent()::
-      (codeGenAssignation assign) @ ["\n"] @
+      declareLambdaListAsDef (lambdas) @
+      printIndent()::(codeGenAssignation assign) @ ["\n"] @
       printIndent()::"while"::(codeGenExp cond) @ [":\n"] @
-      (codeGenIndentedStatList statList) @ ["\n"] @
-      printIndent()::"\t"::(codeGenAssignation incr) @ ["\n"] @
+      (codeGenIndentedStatList (statList@[{theType=None; options=(AssignS incr)}])) @ ["\n"] @
       setLambdaListNone lambdas
 
 and getLambdasInIfsCond (ifS:statement) =
@@ -355,7 +354,7 @@ and codeGenSwitch (switchS:statement) =
     | SwitchS (statOp, None, clauses) ->
       let lambdasInClauses = getLambdasInClauses clauses in
       (codeGenOptionalInlineStat statOp) @ ["\n"] @
-      printIndent()::declareLambdaListAsDef lambdasInClauses @
+      printIndent()::declareLambdaListAsDef lambdasInClauses @ ["\n"] @
       (* An explanation is needed here:
          To avoid Python behavior where non-empty objects are evaluated to True
          we do not get the boolean conversion of each object, but we force
@@ -371,8 +370,8 @@ and codeGenSwitch (switchS:statement) =
 and codeGenClauseConditions switchId expList =
   match expList with
     | [] -> []
-    | hd::[] -> switchId::"=="::(codeGenExp hd)
-    | hd::tl -> switchId::"=="::(codeGenExp hd) @ ["or"] @ (codeGenClauseConditions switchId tl)
+    | hd::[] -> switchId::"=="::"("::(codeGenExp hd) @ [")"]
+    | hd::tl -> switchId::"=="::"("::(codeGenExp hd) @ [")"] @ ["or"] @ (codeGenClauseConditions switchId tl)
 
 and codeGenClauseList (clauses: clause list) switchId =
   match clauses with
@@ -439,15 +438,15 @@ and codeGenAssignation (assign:assignation) =
     | Assign (assigneeList, expList) ->
       let lambdasInExp = getLambdasInExpList expList in
       let lambdasInAssigneeList = getLambdasInAssigneeList assigneeList in
-      declareLambdaListAsDef (lambdasInAssigneeList @ lambdasInExp) @
-      (codeGenSeparatedAssigneeList assigneeList ",") @ ["="] @
+      declareLambdaListAsDef (lambdasInAssigneeList @ lambdasInExp) @ ["\n"] @
+      printIndent()::(codeGenSeparatedAssigneeList assigneeList ",") @ ["="] @
       (codeGenSeparatedExpList expList ",") @ ["\n"] @
       setLambdaListNone (lambdasInAssigneeList @ lambdasInExp)
     | DeclAssign (assigneeList, expList) ->
       let lambdasInExp = getLambdasInExpList expList in
       let lambdasInAssigneeList = getLambdasInAssigneeList assigneeList in
-      declareLambdaListAsDef (lambdasInAssigneeList @ lambdasInExp) @
-      (codeGenSeparatedAssigneeList assigneeList ",") @ ["="] @
+      declareLambdaListAsDef (lambdasInAssigneeList @ lambdasInExp) @ ["\n"] @
+      printIndent()::(codeGenSeparatedAssigneeList assigneeList ",") @ ["="] @
       (codeGenSeparatedExpList expList ",") @ ["\n"] @
       setLambdaListNone (lambdasInAssigneeList @ lambdasInExp)
     | OpAssign (assignee, operator, exp) ->
@@ -459,8 +458,8 @@ and codeGenAssignation (assign:assignation) =
       setLambdaListNone (lambdasInAssignee @ lambdasInExp)
     | Increment (assignee, operator) ->
       let lambdasInAssignee = getLambdasInAssignee assignee in
-      declareLambdaListAsDef lambdasInAssignee @
-      (codeGenAssignee assignee) @ (codeGenOp operator) @ ["\n"] @
+      declareLambdaListAsDef lambdasInAssignee @ ["\n"] @
+      printIndent()::(codeGenAssignee assignee) @ (codeGenOp operator) @ ["\n"] @
       setLambdaListNone lambdasInAssignee
 
 and getLambdasInAssigneeList assigneeList =
@@ -537,7 +536,10 @@ let rec replaceMany fromList toList str =
       replace hd1 hd2 (replaceMany tl1 tl2 str)
     | _ -> str
 
-let codeGen ast =
+let rec prettifyCodeGen code =
   let fromList =  ["}"; "\n\n}"; "\t "; "\n;"; "( )"; " ;"; " ,"; ". "; " ."; ";;"; "\n "; "~ "] in
   let toList = ["\n}"; "\n}"; "\t"; ";"; "()"; ";"; ","; "."; "."; ";"; "\n"; "~"] in
-  replaceMany fromList toList (codeGenProg ast)
+  replaceMany fromList toList code
+
+let codeGen ast =
+  prettifyCodeGen (codeGenProg ast)

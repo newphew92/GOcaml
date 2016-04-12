@@ -167,7 +167,7 @@ assign:
   | incDec { $1 }
 
 assignee:
-  | primary { { theType=None; options=Object $1 } } /* TYPECHECKER WILL NEED TO GET SURE THIS IS AN ID */
+  | primary { { theType=None; options=Object $1 } }
 
 non_empty_assignee_list:
   | assignee { [$1] }

@@ -84,7 +84,8 @@ let interpretString = '"' inInterpretString '"'
 let rawString = '\096' inRawString '\096'
 let runeString = '\'' inRuneString '\''
 
-let id = ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_' '-']*
+let idStart = ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_']*
+let id = idStart* ['a'-'z' 'A'-'Z' '_']
 
 let type = "int" | "float64" | "bool" | "rune" | "string"
 

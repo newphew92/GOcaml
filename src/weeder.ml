@@ -137,7 +137,7 @@ and weedStatement (stat:statement) inLoop inFuncBlock =
       { theType=t; options=DeclareS (weedDec d inLoop inFuncBlock) }
       (* l : loopStat *)
     | ForS s ->
-      { theType=t; options=ForS (weedLoopStat s inLoop inFuncBlock) }
+      { theType=t; options=ForS (weedLoopStat s true inFuncBlock) }
       (* s: statement option; e: exp (condition), ifs: statement list (then), els: statement list (else) *)
     | IfS (s, e, ifs, els) ->
       { theType=t;
