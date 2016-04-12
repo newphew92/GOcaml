@@ -536,10 +536,14 @@ let rec replaceMany fromList toList str =
       replace hd1 hd2 (replaceMany tl1 tl2 str)
     | _ -> str
 
+let remove_extra_break code =
+  let regexp = Str.regexp "\n[\n\t ]*\n" in
+  Str.global_replace regexp "\n" code
+
 let rec prettifyCodeGen code =
   let fromList =  ["}"; "\n\n}"; "\t "; "\n;"; "( )"; " ;"; " ,"; ". "; " ."; ";;"; "\n "; "~ "] in
   let toList = ["\n}"; "\n}"; "\t"; ";"; "()"; ";"; ","; "."; "."; ";"; "\n"; "~"] in
-  replaceMany fromList toList code
+  replaceMany fromList toList (remove_extra_break code)
 
 let codeGen ast =
   prettifyCodeGen (codeGenProg ast)
