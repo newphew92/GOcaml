@@ -14,8 +14,9 @@ func main () {
     case '"':
         esc = "&quot;"
     default:
-        panic("unrecognized escape character")
+        esc=panic("unrecognized escape character")
       }
+  println(esc)
 }
 
 func panic(s string) {
@@ -26,5 +27,5 @@ func panic(s string) {
 
 func pick() {
   println ("I just give you a character")
-  return "kkkkkkkk"
+  return '>'
 }

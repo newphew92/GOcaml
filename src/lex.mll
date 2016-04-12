@@ -71,6 +71,9 @@ let octal = '0' digit+
 let hexa = '0' ( 'x' | 'X' ) digit+
 let float = digit+ '.' digit* | digit* '.' digit+
 
+(* Boolean literals *)
+let bool = "true" | "false"
+
 (*
   String/rune literals
   Double quote = intepreted strings
@@ -81,7 +84,8 @@ let interpretString = '"' inInterpretString '"'
 let rawString = '\096' inRawString '\096'
 let runeString = '\'' inRuneString '\''
 
-let id = ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_' '-']*
+let idStart = ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_']*
+let id = idStart* ['a'-'z' 'A'-'Z' '_']
 
 let type = "int" | "float64" | "bool" | "rune" | "string"
 
@@ -107,6 +111,7 @@ rule read =
   | interpretString { dprint (Lexing.lexeme lexbuf); semiFlagUp();  STRING (Lexing.lexeme lexbuf) }
   | rawString       { dprint (Lexing.lexeme lexbuf); semiFlagUp();  RAWSTRING (Lexing.lexeme lexbuf) }
   | runeString      { dprint (Lexing.lexeme lexbuf); semiFlagUp();  RUNESTRING (Lexing.lexeme lexbuf) }
+  | bool            { dprint (Lexing.lexeme lexbuf); semiFlagUp();  BOOL (Lexing.lexeme lexbuf) }
   | type            { dprint ("type: " ^ Lexing.lexeme lexbuf); semiFlagUp();  TYPE (Lexing.lexeme lexbuf) }
   | '+'             { dprint (Lexing.lexeme lexbuf); semiFlagDown();  PLUS (Lexing.lexeme lexbuf) }
   | '-'             { dprint (Lexing.lexeme lexbuf); semiFlagDown();  MINUS (Lexing.lexeme lexbuf) }
@@ -131,8 +136,9 @@ rule read =
   | ":="            { dprint (Lexing.lexeme lexbuf); semiFlagDown();  COLEQ (Lexing.lexeme lexbuf) }
   | "&^="           { dprint (Lexing.lexeme lexbuf); semiFlagDown();  AMPHATEQ (Lexing.lexeme lexbuf) }
   | "&&"            { dprint (Lexing.lexeme lexbuf); semiFlagDown();  AND (Lexing.lexeme lexbuf) }
-  | "|| "            { dprint (Lexing.lexeme lexbuf);  semiFlagDown(); OR (Lexing.lexeme lexbuf) }
-  | "<-"            { dprint (Lexing.lexeme lexbuf); semiFlagDown();  LTMIN (Lexing.lexeme lexbuf) }
+  | "||"            { dprint (Lexing.lexeme lexbuf);  semiFlagDown(); OR (Lexing.lexeme lexbuf) }
+  | "<-"            { dprint (Lexing.lexeme lexbuf); raise (UnusedToken "'<-' is reserved, but unused in GoLite")
+                      (*dprint (Lexing.lexeme lexbuf); semiFlagDown();  LTMIN (Lexing.lexeme lexbuf)*) }
   | "++"            { dprint (Lexing.lexeme lexbuf); semiFlagUp();  PPLUS (Lexing.lexeme lexbuf) }
   | "--"            { dprint (Lexing.lexeme lexbuf); semiFlagUp();  MMINUS (Lexing.lexeme lexbuf) }
   | "=="            { dprint (Lexing.lexeme lexbuf); semiFlagDown();  EEQUAL (Lexing.lexeme lexbuf) }
