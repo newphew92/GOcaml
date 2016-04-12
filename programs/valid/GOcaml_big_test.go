@@ -2,6 +2,12 @@ package main
 
 var a, b, c int
 
+type Thing struct {
+  name string
+  id int
+  value float64
+}
+
 func main() {
   x:=0
   for x<10{
@@ -63,8 +69,8 @@ func modulo_weird(m float64) float64 {
   mod:=num /2 +3
 
   switch{
-    case mod/2 == mod:
-      println(`e\/en`)
+  case mod/2 == mod, mod>100000:
+      println(`e\/en or very big`)
     default:
       println(`not e\/en`)
   }

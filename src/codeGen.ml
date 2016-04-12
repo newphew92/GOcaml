@@ -368,11 +368,19 @@ and codeGenSwitch (switchS:statement) =
  Switch which a comparing an expression to values
  *)
 and codeGenClauseConditions switchId expList =
-  match expList with
-    | [] -> []
-    | hd::[] -> switchId::"=="::"("::(codeGenExp hd) @ [")"]
-    | hd::tl -> switchId::"=="::"("::(codeGenExp hd) @ [")"] @ ["or"] @ (codeGenClauseConditions switchId tl)
-
+  match switchId with
+  | "True" ->
+    (match expList with
+      | [] -> []
+      | hd::[] -> "("::(codeGenExp hd) @ [")"] @ ["is True"]
+      | hd::tl -> "("::(codeGenExp hd) @ [")"] @ ["is True"] @ ["or"] @ (codeGenClauseConditions switchId tl)
+    )
+  | _ ->
+    (match expList with
+      | [] -> []
+      | hd::[] -> switchId::"=="::"("::(codeGenExp hd) @ [")"]
+      | hd::tl -> switchId::"=="::"("::(codeGenExp hd) @ [")"] @ ["or"] @ (codeGenClauseConditions switchId tl)
+    )
 and codeGenClauseList (clauses: clause list) switchId =
   match clauses with
     | hd::tl ->
@@ -411,7 +419,7 @@ and codeGenClauseListTail switchId (clauses: clause list) delayedDefault =
 
 
 and codeGenStructFieldDecList fieldList =
-  printIndent()::"def __init__(":: (codeGenFieldsAsArgs fieldList) @ ["):\n"] @
+  printIndent()::"def __init__(self,":: (codeGenFieldsAsArgs fieldList) @ ["):\n"] @
   (increaseIndent();
   let x =
   (match fieldList with
@@ -541,6 +549,7 @@ let remove_extra_break code =
   Str.global_replace regexp "\n" code
 
 let rec prettifyCodeGen code =
+  (* WARNING: do not remove as the ~ replacement is actually necessary for syntax *)
   let fromList =  ["}"; "\n\n}"; "\t "; "\n;"; "( )"; " ;"; " ,"; ". "; " ."; ";;"; "\n "; "~ "] in
   let toList = ["\n}"; "\n}"; "\t"; ";"; "()"; ";"; ","; "."; "."; ";"; "\n"; "~"] in
   replaceMany fromList toList (remove_extra_break code)

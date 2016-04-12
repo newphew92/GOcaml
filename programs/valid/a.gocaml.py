@@ -2,6 +2,11 @@ from __future__ import print_function
 import sys
 def rune_to_string(r):
 	return chr(r) if isinstance(r, int) else r
+class go_Thing (object):
+	def __init__(self, go_name=None, go_id=None, go_value=None ):
+		self.go_name = go_name
+		self.go_id = go_id
+		self.go_value = go_value
 def go_main () :
 	go_x = 0
 	while go_x < 10 :
@@ -10,8 +15,8 @@ def go_main () :
 		if switch_container0 == ( 8 ) :
 			go_x = - 3
 		else:
-			if True == ( go_x < 0 ) :
-				go_x = 8
+			if ( go_x < 0 ) is True :
+				go_x = 8 
 	def lambda0 ( go_i ):
 		go_v = 2
 		if go_i < 4 :
@@ -51,8 +56,8 @@ def go_main () :
 def go_modulo_weird ( go_m ) :
 	go_num = int ( go_m )
 	go_mod = go_num / 2 + 3
-	if True == ( go_mod / 2 == go_mod ) :
-		print( r"e\/en" )
+	if ( go_mod / 2 == go_mod ) is True or ( go_mod > 100000 ) is True :
+		print( r"e\/en or very big" )
 	else:
 		print( r"not e\/en" )
 	print( go_num % go_mod )
