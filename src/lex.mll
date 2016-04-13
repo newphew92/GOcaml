@@ -11,7 +11,7 @@
   exception UnusedToken of string
 
   (* for debug *)
-  let debug_flag = ref true
+  let debug_flag = ref false
   let dprint str =
     if !debug_flag then
       if (compare str "\n") = 0 then
@@ -84,8 +84,7 @@ let interpretString = '"' inInterpretString '"'
 let rawString = '\096' inRawString '\096'
 let runeString = '\'' inRuneString '\''
 
-let idStart = ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_']*
-let id = idStart* ['a'-'z' 'A'-'Z' '_']
+let id = ['a'-'z' 'A'-'Z' '_'] ['a'-'z' 'A'-'Z' '0'-'9' '_']*
 
 let type = "int" | "float64" | "bool" | "rune" | "string"
 

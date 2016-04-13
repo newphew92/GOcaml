@@ -7,6 +7,12 @@ class go_Thing (object):
 		self.go_name = go_name 
 		self.go_id = go_id 
 		self.go_value = go_value 
+class go_BiggerThing (object): 
+	def __init__(self, go_name=None, go_id=None, go_value1=None, go_value2=None ):
+		self.go_name = go_name 
+		self.go_id = go_id 
+		self.go_value1 = go_value1 
+		self.go_value2 = go_value2 
 def go_main () :
 	go_x = 0 
 	while go_x < 10 :
@@ -64,11 +70,14 @@ def go_modulo_weird ( go_m ) :
 	if go_make_a_thing () == 1 :
 		return float ( go_num % go_mod ) 
 	else:
-		return - 1 
+		return - 1.
 def go_make_a_thing () :
 	go_thing = 	go_Thing ( go_name = "First Thing", go_id = 1, go_value = 0.2 ) 
 	print( "I made: ", end='')
-	print( go_thing.go_name,  go_thing.go_id,  go_thing.go_value )
+	print( go_thing.go_name,  ",",  go_thing.go_id,  ",",  go_thing.go_value )
+	go_thing.go_name = "John" 
+	print( "Wait I meant ", end='')
+	print( go_thing.go_name )
 	return 1 
 # PARAMETERS ON MAIN FUNCTION NOT SUPPORTED
 # arguments from the console can only be passed as string
