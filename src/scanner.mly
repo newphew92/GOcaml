@@ -83,7 +83,6 @@
 %type <Ast.statement> simpleStat
 %type <Ast.loopStat> forStat
 
-
 %start prog
 %%
 
@@ -129,10 +128,10 @@ stat_list:
  | {[]}
  | non_empty_stat_list { $1 }
 
- non_empty_stat_list:
-   | SEMICOLON stat_list { $2 } (* very cornery case to allow empty statements *)
-   | stat { [$1] }
-   | stat non_empty_stat_list { $1 :: $2 }
+non_empty_stat_list:
+ | SEMICOLON stat_list { $2 } (* very cornery case to allow empty statements *)
+ | stat { [$1] }
+ | stat non_empty_stat_list { $1 :: $2 }
 
 typeG: /*basic types*/
   | TYPE { { theType=None; options=BuiltInType $1 } }
@@ -182,8 +181,23 @@ print:
   | PRINTLN LPAR exp_list RPAR { { theType=None; options=PrintlnS $3 } }
 
 exp:
-  | exp logicOp factor { { theType=None; options=BinaryOp ($1, $2, $3) } }
-  | exp addOp factor { { theType=None; options=BinaryOp ($1, $2, $3) } }
+  | structInstantiation { $1 }
+  | expNoStruct { $1 }
+
+structInstantiation:
+    | ID LCURL structInstanceFields RCURL { let x:exp = { theType=None; options=StructObj ($1, $3) } in x }
+
+structInstanceFields:
+  | { [] }
+  | structNonEmptyInstanceFields { $1 }
+
+structNonEmptyInstanceFields:
+  | ID COLON exp { [($1, $3)] }
+  | ID COLON exp COMMA structNonEmptyInstanceFields { ($1, $3)::$5 }
+
+expNoStruct:
+  | expNoStruct logicOp factor { { theType=None; options=BinaryOp ($1, $2, $3) } }
+  | expNoStruct addOp factor { { theType=None; options=BinaryOp ($1, $2, $3) } }
   | factor { $1 }
 
 factor:
@@ -237,7 +251,7 @@ constVal :
   | OCTAL { { theType=None; options=OctConst $1 } }
   | HEXA { { theType=None; options=HexaConst $1 } }
   | BOOL { { theType=None; options=BoolConst $1 } }
-  | stringVal {$1}
+  | stringVal { $1 }
 
 stringVal :
   | RAWSTRING { { theType=None; options=RawStringConst $1 }}
@@ -280,9 +294,10 @@ unaryOp:
   | LTMIN {$1}
 
 switchStat:
-  | SWITCH option(exp) LCURL list(switchClause) RCURL { let x:statement = { theType=None; options=SwitchS (None, $2, $4) } in x }
-  | SWITCH simpleStat SEMICOLON option(exp) LCURL list(switchClause) RCURL {
-      { theType=None; options=SwitchS ((Some $2), $4, $6)} }
+  | SWITCH option(expNoStruct) LCURL nonempty_list(switchClause) RCURL
+    { let x:statement = { theType=None; options=SwitchS (None, $2, $4) } in x }
+  | SWITCH simpleStat SEMICOLON option(expNoStruct) LCURL nonempty_list(switchClause) RCURL
+    { { theType=None; options=SwitchS ((Some $2), $4, $6)} }
 switchClause:
   | CASE exp_list COLON stat_list {{ theType=None; options=OptionSw ($2, $4) } }
   | DEFAULT COLON stat_list {{ theType=None; options=DefaultSw $3} }
@@ -296,8 +311,8 @@ non_empty_exp_list:
   | exp COMMA non_empty_exp_list { $1 :: $3 }
 
 ifStat:
-  | IF exp block elseStat {{ theType=None; options=IfS (None, $2, $3, $4)} }
-  | IF simpleStat SEMICOLON exp block elseStat {
+  | IF expNoStruct block elseStat {{ theType=None; options=IfS (None, $2, $3, $4)} }
+  | IF simpleStat SEMICOLON expNoStruct block elseStat {
     { theType=None; options=IfS ((Some $2), $4, $5, $6) } }
 
 elseStat:
@@ -306,10 +321,10 @@ elseStat:
   | ELSE block { $2 }
 
 simpleStat:
-  | exp { let x:statement = { theType=None; options=(ExpS $1) } in x }
+  | expNoStruct { let x:statement = { theType=None; options=(ExpS $1) } in x }
   | assign { let x:statement = { theType=None; options=(AssignS $1) }in x }
 
 forStat:
   | FOR block { { theType=None; options=InfLoop $2 } }
-  | FOR exp block { { theType=None; options=While ($2, $3) } }
+  | FOR expNoStruct block { { theType=None; options=While ($2, $3) } }
   | FOR assign SEMICOLON exp SEMICOLON incDec block { { theType=None; options=For ($2, $4, $6, $7) } }

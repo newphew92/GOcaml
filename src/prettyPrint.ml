@@ -143,7 +143,14 @@ and pprintExp (exp:exp) =
     | TypeCast (toType, exp) ->
       (pprintTypeCall toType) @
       ["("] @ (pprintExp exp) @ [")"]
+    | StructObj (name, fields) ->
+      name::"{"::(pprintStructFieldInstantiation fields)@["}"]
 
+and pprintStructFieldInstantiation fields =
+  match fields with
+    | [] -> []
+    | hd::[] -> (fst hd)::":"::(pprintExp (snd hd))
+    | hd::tl -> (fst hd)::":"::(pprintExp (snd hd))@[","]@(pprintStructFieldInstantiation tl)
 
 and pprintOptionalTypeCall (opType: typeCall option) =
   match opType with

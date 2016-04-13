@@ -448,6 +448,8 @@ and weedExp (ex:exp) inLoop inFuncBlock =
               raise (WeederSyntax "catastrophic: can only cast from built-in")),
           weedExp e inLoop inFuncBlock
           )
+      | StructObj (name, fields) ->
+        StructObj (name, List.map (fun f -> (fst f, weedExp (snd f) inLoop inFuncBlock)) fields)
       | eo -> eo (* cases: literals or variable name *)
     } in x
 and weedOptionalExp ex inLoop inFuncBlock =

@@ -75,5 +75,17 @@ func modulo_weird(m float64) float64 {
       println(`not e\/en`)
   }
   println(num % mod)
-  return float64(num % mod)
+  //Just make a thing before returning
+  if make_a_thing() == 1 {
+    return float64(num % mod)
+  } else {
+    return -1
+  }
+}
+
+func make_a_thing() int {
+  thing:=Thing{name:"First Thing", id:1, value:0.2}
+  print("I made: ")
+  println(thing.name, thing.id, thing.value)
+  return 1
 }

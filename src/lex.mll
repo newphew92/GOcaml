@@ -11,7 +11,7 @@
   exception UnusedToken of string
 
   (* for debug *)
-  let debug_flag = ref false
+  let debug_flag = ref true
   let dprint str =
     if !debug_flag then
       if (compare str "\n") = 0 then
