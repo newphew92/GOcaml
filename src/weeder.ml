@@ -250,7 +250,15 @@ and weedTypeDec (tDec:typeDec) inLoop inFuncBlock =
   (* t: string option containing None at that point *)
   let t = tDec.theType in
   match tDec.options with
-    | StructD (s, sfdl) -> (* s: string, sfdl: StructFieldDec list *)
+    | StructD (s, sfdl) -> (* s: string, sfdl: structFieldDec list *)
+      if (strAreUnique
+        (List.flatten
+        (List.map (fun (x:structFieldDec) ->
+            (match x.options with
+              | FieldsBunch (sl, _) -> sl) )
+          sfdl)))
+      then ()
+      else raise (WeederSyntax ("struct " ^ s ^ " has duplicate field name"));
       let x:typeDec = { theType=t;
         options=StructD (
           s,
@@ -258,6 +266,17 @@ and weedTypeDec (tDec:typeDec) inLoop inFuncBlock =
           )
       } in x
     | o -> { theType=t; options = o} (* case: Simple *)
+
+and strAreUnique str_list =
+  match str_list with
+    | hd::tl -> (strNotInList hd tl) && (strAreUnique tl)
+    | [] -> true
+
+and strNotInList str str_list =
+  match str_list with
+    | [] -> true
+    | hd::tl ->
+      if (String.compare hd str) != 0 then (strNotInList str tl) else false
 
 and weedLoopStat (lStat:loopStat) inLoop inFuncBlock =
   (* t: string option containing None at that point *)
@@ -448,6 +467,8 @@ and weedExp (ex:exp) inLoop inFuncBlock =
               raise (WeederSyntax "catastrophic: can only cast from built-in")),
           weedExp e inLoop inFuncBlock
           )
+      | StructObj (name, fields) ->
+        StructObj (name, List.map (fun f -> (fst f, weedExp (snd f) inLoop inFuncBlock)) fields)
       | eo -> eo (* cases: literals or variable name *)
     } in x
 and weedOptionalExp ex inLoop inFuncBlock =

@@ -8,6 +8,12 @@ type Thing struct {
   value float64
 }
 
+type BiggerThing struct {
+  name string
+  id int
+  value1, value2 float64
+}
+
 func main() {
   x:=0
   for x<10{
@@ -75,5 +81,20 @@ func modulo_weird(m float64) float64 {
       println(`not e\/en`)
   }
   println(num % mod)
-  return float64(num % mod)
+  //Just make a thing before returning
+  if make_a_thing() == 1 {
+    return float64(num % mod)
+  } else {
+    return -1.
+  }
+}
+
+func make_a_thing() int {
+  thing:=Thing{name:"First Thing", id:1, value:0.2}
+  print("I made: ")
+  println(thing.name, ",", thing.id, ",", thing.value)
+  thing.name = "John"
+  print("Wait I meant ")
+  println(thing.name)
+  return 1
 }

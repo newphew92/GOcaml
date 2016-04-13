@@ -83,6 +83,7 @@ let rec codeGenProg (ast:ast) =
     "import sys\n\n" ::
     fn_for_rune_cast ::
     (codeGenDecList ast.declarations) @ ["\n"] @
+    ["# PARAMETERS ON MAIN FUNCTION NOT SUPPORTED\n"] @
     ["# arguments from the console can only be passed as string\n"] @
     ["# for now you need to force cast them in go\n"] @
     [renameVar "main(*sys.argv[1:])"]
@@ -239,7 +240,7 @@ and codeGenExp (exp:exp) =
       (codeGenOptionalExp fstIndOp) @
       [":"] @ (codeGenOptionalExp sndIndOp) @ ["]"]
     | ObjectField (objExp, field) ->
-      (codeGenExp objExp) @ ["." ^ field]
+      (codeGenExp objExp) @ ["." ^ (renameVar field)]
     (* FunctionCall of exp * exp list *)
     | FunctionCall (func, args) ->
       (codeGenExp func) @ ["("] @ (codeGenSeparatedExpList args ",") @ [")"]
@@ -249,6 +250,17 @@ and codeGenExp (exp:exp) =
     | TypeCast (toType, exp) ->
       (codeGenTypeCall toType) @
       ["("] @ (codeGenExp exp) @ [")"]
+      | StructObj (name, fields) ->
+        let lambdas = getLambdasInExpList (List.map (fun l -> snd l) fields) in
+        (declareLambdaListAsDef lambdas) @
+        printIndent()::(renameVar name)::"("::(codeGenStructFieldInstantiation fields)@[")"] @
+        setLambdaListNone lambdas
+
+  and codeGenStructFieldInstantiation fields =
+    match fields with
+      | [] -> []
+      | hd::[] -> renameVar (fst hd)::"="::(codeGenExp (snd hd))
+      | hd::tl -> renameVar (fst hd)::"="::(codeGenExp (snd hd))@[","]@(codeGenStructFieldInstantiation tl)
 
 and codeGenOptionalTypeCall (opType: typeCall option) =
   match opType with
