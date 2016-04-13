@@ -17,6 +17,7 @@
 %token <string> STRING
 %token <string> RAWSTRING
 %token <string> RUNESTRING
+%token <string> BOOL
 %token <string> TYPE
 /* Unused but reserved tokens
  %token APPEND, CHAN, CONST, DEFER, DOTS, FALLTHROUGH
@@ -166,7 +167,7 @@ assign:
   | incDec { $1 }
 
 assignee:
-  | primary { { theType=None; options=Object $1 } } /* TYPECHECKER WILL NEED TO GET SURE THIS IS AN ID */
+  | primary { { theType=None; options=Object $1 } }
 
 non_empty_assignee_list:
   | assignee { [$1] }
@@ -198,7 +199,7 @@ primary:
   | ID { { theType=None; options=ExpId $1 } }
   | constVal {$1}
   | type_cast {$1}
-  | FUNC LPAR id_list_with_types RPAR option(typeG) block { { theType=None; options=Lambda ($3, $5, $6) } } /* Function literal */
+  | FUNC LPAR id_list_with_types RPAR option(typeG) block { { theType=None; options=Lambda ($3, $5, $6, "") } } /* Function literal */
   | primary LSQPAR exp RSQPAR { { theType=None; options=ArrayElem ($1, $3) } } /* index element */
   | primary LSQPAR option(exp) COLON option(exp) RSQPAR { {theType=None; options=ArraySlice ($1, $3, $5) } } /* slices */
   | primary LPAR exp_list RPAR { { theType=None; options=FunctionCall ($1, $3) } } /* function call */
@@ -235,6 +236,7 @@ constVal :
   | RUNESTRING { { theType=None; options=RuneConst $1 } }
   | OCTAL { { theType=None; options=OctConst $1 } }
   | HEXA { { theType=None; options=HexaConst $1 } }
+  | BOOL { { theType=None; options=BoolConst $1 } }
   | stringVal {$1}
 
 stringVal :

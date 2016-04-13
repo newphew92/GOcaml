@@ -6,7 +6,7 @@ exception CatastrophicError
 exception AlreadyDeclaredInScope
 exception TODO
 exception TypeNotDefined
-exception TryingToWriteEmptySymbol
+exception TryingToWriteToEmptySymbolTable
 exception TypeMismatch
 exception TypeCantBeCast
 exception CantBeAssigned
@@ -14,6 +14,11 @@ exception VarDoesNotExist
 exception Uncastable
 exception ExpectedBool
 exception InvalidOperationOnType
+exception UnequalVarsAndAssigns
+exception CannotDeclareNothing
+exception ExpIdOptionFail
+exception NonExistentOp
+exception ArrayNotDeclared
 type symbol = {
   id:string;
   idType: string;
@@ -44,14 +49,21 @@ module Stack =
       match (!s) with
         h::t -> (s:=t); h
       | [] -> failwith "Empty stack"
+    let rec tableDumpRec l = match l with
+      | [] -> Printf.sprintf "---------------------------\n"; ()
+      | h::t ->let temp = Printf.sprintf "Symbo: %s, Type: %s" h.id h.idType in tableDumpRec t
+    let tableDump (s:symbolTable) = match (s) with
+      | [] -> Printf.sprintf "Empty table";()
+      | h::t -> tableDumpRec s
     (*recurse through the symbolTable and add the symbol at the end if it doens't exist*)
     let rec writeSymbolToTable  (symbol:symbol) (table:symbolTable) (acc:symbolTable):(symbolTable) = match table with
       | [] -> symbol::acc (*add the symbol to our symbol table*)
-      | hd::tail -> if (hd.id<>symbol.id) then writeSymbolToTable symbol tail acc else raise AlreadyDeclaredInScope
+      | hd::tail -> if (hd.id<>symbol.id) then writeSymbolToTable symbol tail acc else (Printf.sprintf "testing";tableDump acc ;raise AlreadyDeclaredInScope)
     (*add symbol to current scope table*)
     let writeSymbol (symbol:symbol) s = match (!s) with
       | h::t -> let n = writeSymbolToTable symbol h h in (s:=n::t)
-      | _->raise TryingToWriteEmptySymbol
+      | [] -> let n = writeSymbolToTable symbol [] [] in (s:=[n])
+      | _->raise TryingToWriteToEmptySymbolTable
     let rec writeManySymbols (symList: symbol list) s = match symList with
        | [] -> ()
        | hd::tail -> writeSymbol hd s; writeManySymbols tail s
@@ -71,12 +83,7 @@ module Stack =
       | hd::tail ->
         writeSymbol {id = hd; idType = (getTypeCallOp (Some idType))} s;
         writeSymsFromlist tail idType s
-    let rec tableDumpRec l = match l with
-      | [] -> Printf.sprintf "---------------------------\n"
-      | h::t ->let temp = Printf.sprintf "Symbo: %s, Type: %s" h.id h.idType in tableDumpRec t
-    let tableDump s = match (!s) with
-      | [] -> Printf.sprintf "Empty table"
-      | h::t -> tableDumpRec h
+
   end;;
 
 (*We will apply the typechecker at the beginning of the AST*)
@@ -126,7 +133,7 @@ and writeArgs varsList (collection) (holdEmpty:string list) (acc:string)= match 
       | Some str ->
         Stack.writeSymbol {id = id;idType = (getTypeCall str.options)} collection;
         let s = argTypeFiller holdEmpty collection (getTypeCall str.options) "" in (*pass in the held ids and write them to the symtable as well*)
-        writeArgs tail collection [] acc^"@"^s
+        writeArgs tail collection [] acc^"->"^s
 (* for mutliple id declarations ( x,y,z int) *)
 and argTypeFiller (strs:string list) (collection) (str:string) (acc:string)= match strs with
   | [] -> acc
@@ -146,7 +153,7 @@ and handleVarDec (idList:string list) (varType:typeCall) (collection):dec=
 and handleVarsAss (idList:string list) (varType:typeCall option) (expList:exp list) collection (accId:string list) (accExp:exp list)= match idList, expList with
 | ([],[])-> let g =VarsDandAssign (accId, varType, accExp) in {theType=Some (getTypeCallOp varType);options=g}
 | (hId::tId, hE::tE)-> handleVarsAss tId varType tE collection (accId@[hId]) (accExp@[(handleExp hE collection)])
-| (_,_)->raise CatastrophicError
+| (_,_)->raise UnequalVarsAndAssigns
 and handleStatList statL c acc :(statement list)=match statL with
   | h::t -> handleStatList t c (acc@[(handleStat h c)])
   | _-> acc
@@ -154,7 +161,9 @@ and handleStat stat collection = match stat.options with
   | BreakS -> stat
   | ContinueS -> stat
   | DeclareS d -> (*recycle handleDecList and correct the type*)
-    (match handleDecList [d] collection [] with h::t->{theType=stat.theType;options=DeclareS h}| _->raise CatastrophicError)
+    (match handleDecList [d] collection [] with
+      | h::t->{theType=stat.theType;options=DeclareS h}
+      | _->raise CannotDeclareNothing)
   | ForS l(*loopstat*) -> {theType=stat.theType;options=(ForS (handleLoop l collection))}
   | IfS (stat,e,block, b) -> handleIf stat e block b collection(* else if is contained in second block *)
   | PrintS expL -> {theType=stat.theType;options=PrintS (handleExpList expL collection [])}
@@ -181,7 +190,7 @@ and handleAssignee (ass:assignee) (collection:symbolTable Stack.t) :assignee = m
       | Some str -> {theType=e.theType;options=ass.options}
       | None -> (match (handleExp e collection).theType with
           | Some str-> Stack.writeSymbol {id=s;idType=str} collection; {theType =Some str;options=ass.options}
-          | _->raise CatastrophicError))
+          | _->raise ExpIdOptionFail))
     | _ -> raise CantBeAssigned)
 and handleAssigneeL (assL: assignee list) (expL: exp list) collection (assAcc:assignee list) (expAcc: exp list) (f:string)= match assL,expL with
   | ([],[])->(match f with | "Assign" -> Assign (assAcc, expAcc) | _ -> DeclAssign (assAcc, expAcc))
@@ -191,7 +200,7 @@ and handleAssigneeL (assL: assignee list) (expL: exp list) collection (assAcc:as
       handleAssigneeL assT eT collection (assAcc@[handleAssignee assH collection]) (expAcc@[handleExp eH collection]) f
       else raise TypeMismatch
       )
-  | _->raise CatastrophicError
+  | _->raise UnequalVarsAndAssigns
 and handleLoop loop collection (*forloop*):loopStat= match loop.options with
   | InfLoop (statL) -> {theType=loop.theType;options=InfLoop (handleStatList statL collection [])}
   | While (e, statL) -> (if ((handleExp e collection).theType = Some "bool")
@@ -210,7 +219,7 @@ and handleOp (ass:assignee) (op:string) (e:exp) collection= match op with
         then {theType=Some "float64";options=OpAssign (a,"+",ee)}
         else raise TypeMismatch
       | _ -> raise InvalidOperationOnType)
-  | _-> raise CatastrophicError
+  | _-> raise NonExistentOp
 and handleIf stat e block b collection = match stat with
   | Some s -> {theType=None;options=IfS (Some (handleStat s collection),(handleExp e collection),(handleStatList block collection []), (handleStatList b collection []))}
   | None -> {theType=None;options=IfS (None,(handleExp e collection),(handleStatList block collection []), (handleStatList b collection []))}
@@ -229,10 +238,10 @@ and handleClause (cl:clause list) (acc:clause list) collection :(clause list)= m
     | OptionSw (expL, (statL:statement list))-> handleClause t (acc@[{theType=None;options=OptionSw (handleExpList expL collection [], handleStatList statL collection [])}]) collection
     | DefaultSw statL ->handleClause t (acc@[{theType=None;options=DefaultSw (handleStatList statL collection [])}]) collection
   )
-and handleLambda aList fType block collection :exp=
+and handleLambda aList fType block collection flag:exp=
   Stack.push [] collection;
   let sAcc = (writeArgs aList collection [] "")(*get function sig*) in
-  let g = Lambda (aList, fType, handleBlock block collection []) in
+  let g = Lambda (aList, fType, handleBlock block collection [], flag) in
   {theType = Some ("func"^"->"^sAcc^"->"^(getTypeCallOp fType)); options = g}
 (* and handleTypeDec (n:typeDec) = *)
 
@@ -253,7 +262,7 @@ and handleExp exp collection :exp= match exp.options with
     {theType=((handleExp e collection).theType);options=exp.options} else raise TypeMismatch
   | UnaryOp (s,e)->{theType= (handleExp e collection).theType; options=(handleExp e collection).options}
   | ArrayElem (e,ee)-> if ((handleExp ee collection).theType = Some "int")
-    then (try {theType=(handleExp e collection).theType;options=exp.options} with NotFound ->{theType=None;options=exp.options})
+    then (try {theType=(handleExp e collection).theType;options=exp.options} with NotFound ->raise ArrayNotDeclared(*{theType=None;options=exp.options}*))
     else raise TypeMismatch
     (* raise TODO (*(handleExp e collection) && ((handleExp ee collection).theType = Some "int")*) *)
   | ArraySlice (e, eo, eeo)->(match eo, eeo with
@@ -269,11 +278,11 @@ and handleExp exp collection :exp= match exp.options with
     then (try {theType = Some (Stack.getType s collection ); options=exp.options} with NotFound -> raise VarDoesNotExist)
     else raise TypeMismatch)
   | FunctionCall (e,el)->(
-    let s = List.fold_left (fun (acc:string) (x:exp) -> match x.theType with| None-> raise CatastrophicError | Some s->acc^"@"^s) "func" (handleExpList el collection [])
+    let s = List.fold_left (fun (acc:string) (x:exp) -> match x.theType with| None-> raise CatastrophicError | Some s->acc^"->"^s) "func" (handleExpList el collection [])
     in if ((handleExp e collection).theType = Some s) then  {theType=Some s;options=exp.options}
     else raise TypeMismatch
     )
-  | Lambda (argList, funType, statList)->handleLambda argList funType statList collection
+  | Lambda (argList, funType, statList, flag)->handleLambda argList funType statList collection flag
   | TypeCast (s,e)->{theType= (handleCast s e collection).theType; options=exp.options}
 
 and handleCast s e collection :exp=

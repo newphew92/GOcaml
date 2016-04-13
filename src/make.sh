@@ -19,7 +19,7 @@ echo -e "  \e[33m=====================\e[0m"
 if [ -a _build/sanitize.sh ]
   then _build/sanitize.sh
 fi
-
+rm -rf _build
 echo -e "\e[1m\e[33m- OCamlBuild -> main.ml\e[0m"
 # ocamlbuild -no-hygiene main.native
 ocamlbuild -use-menhir -no-hygiene -use-ocamlfind -pkg str main.native
