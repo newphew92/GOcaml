@@ -128,7 +128,16 @@ and codeGenDec (decl:dec) =
         ["def"; (renameVar name); "("] @ (codeGenArgs args) @ [")"] @ [":\n"] @
         (codeGenIndentedStatList statList) @ ["\n"]
     (* vars: string list, tc: typeCall *)
-    | VarsD (vars, tc) -> []
+    | VarsD (vars, tc) ->
+      "\n"::
+      (match tc.options with
+        | ArrayType (_, _) ->
+          List.flatten
+          (List.map
+           (fun v -> printIndent()::v::"="::codeGenInstantiateArray tc @ ["\n"])
+           vars)
+        | _ -> []
+      )
     (* VarsDandAssign of string list * typeCall option * exp list *)
     | VarsDandAssign (vars, opType, expList) ->
       let lambdas = getLambdasInExpList expList in
@@ -138,6 +147,13 @@ and codeGenDec (decl:dec) =
       setLambdaListNone lambdas
     (* TypeD of typeDec *)
     | TypeD td -> (codeGenTypeDec td)
+
+and codeGenInstantiateArray tp =
+  match tp.options with
+    | ArrayType (len, tc) ->
+      "["::(codeGenInstantiateArray tc) @ ["]"] @
+      ["*"] @ ["("] @ (codeGenExp len) @ [")"]
+    | _ -> ["None"]
 
 and codeGenTypeDec (typeDec:typeDec) =
   match typeDec.options with
