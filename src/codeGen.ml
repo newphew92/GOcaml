@@ -14,9 +14,7 @@ let decreaseIndent () =
     | _ -> raise (GenerationError "cannot decrease empty indentation")
 let printIndent () = concat " " !indent
 
-
 (* MULTILINE LAMBDA HELPERS *)
-
 let rec getLambdasInExp (exp:exp) =
   match exp.options with
     | BinaryOp (e1, op, e2) -> getLambdasInExp e1 @ getLambdasInExp e2
@@ -134,7 +132,7 @@ and codeGenDec (decl:dec) =
         | ArrayType (_, _) ->
           List.flatten
           (List.map
-           (fun v -> printIndent()::v::"="::codeGenInstantiateArray tc @ ["\n"])
+           (fun v -> printIndent()::(renameVar v)::"="::codeGenInstantiateArray tc @ ["\n"])
            vars)
         | _ -> []
       )
@@ -211,12 +209,12 @@ and codeGenInlineStat (stat:statement) =
     | PrintS e ->
       let lambdas = getLambdasInExpList e in
       declareLambdaListAsDef (lambdas) @
-      "print(" :: (codeGenSeparatedExpList e ", ") @ [", end='')\n"] @
+      "print(" :: (codeGenSeparatedExpList e ", ") @ [", sep='', end='')\n"] @
       setLambdaListNone lambdas
     | PrintlnS e ->
       let lambdas = getLambdasInExpList e in
       declareLambdaListAsDef (lambdas) @
-      "print(" :: (codeGenSeparatedExpList e ", ") @ [")\n"] @
+      "print(" :: (codeGenSeparatedExpList e ", ") @ [", sep=' ')\n"] @
       setLambdaListNone lambdas
     | ReturnS e ->
       let lambdas = getLambdasInOptionalExp e in
@@ -576,11 +574,20 @@ let remove_extra_break code =
   let regexp = Str.regexp "\n[\n\t ]*\n" in
   Str.global_replace regexp "\n" code
 
+let remove_extra_spaces code =
+  let regexp = Str.regexp "^ +|$ +" in
+  let dbl_space = Str.regexp "  +" in
+    Str.global_replace dbl_space " "
+      (Str.global_replace regexp "" code)
+
 let rec prettifyCodeGen code =
   (* WARNING: do not remove as the ~ replacement is actually necessary for syntax *)
   let fromList =  ["}"; "\n\n}"; "\t "; "\n;"; "( )"; " ;"; " ,"; ". "; " ."; ";;"; "\n "; "~ "] in
   let toList = ["\n}"; "\n}"; "\t"; ";"; "()"; ";"; ","; "."; "."; ";"; "\n"; "~"] in
-  replaceMany fromList toList (remove_extra_break code)
+  replaceMany fromList toList
+    (remove_extra_spaces
+      (remove_extra_break code)
+    )
 
 let codeGen ast =
   prettifyCodeGen (codeGenProg ast)
