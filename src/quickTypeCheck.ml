@@ -109,9 +109,15 @@ let rec getVarTypeInScope var scope =
 let getVarTypeInCurrentScope var =
   getVarTypeInScope var !currentScope
 
+let getVarInScopeOnly var scope =
+  getVarTypeInList var !(!scope.variables)
+
+let getVarInCurrentScopeOnly var =
+  getVarInScopeOnly var !currentScope
+
 let rec pushInScope var varType =
   try
-    let _ = getVarTypeInScope var !currentScope in
+    let _ = getVarInCurrentScopeOnly var in
     raise (TypeCheck ("variable " ^ var ^ " redeclared"))
   with
   | UnboundVariable _ ->
