@@ -6,7 +6,7 @@ open Scanner
 open Lex
 open PrettyPrint
 open CodeGen
-(* open TypeCheck *)
+open QuickTypeCheck
 
 exception InputError of string
 
@@ -121,7 +121,7 @@ let completely_weeded_ast = Weeder.weedAst ast
 
 (* INSERT TYPECHECKING STEP HERE *)
 (* TODO: change to typchecker call *)
-let annotated_ast = completely_weeded_ast
+let annotated_ast = QuickTypeCheck.typeCheckCode completely_weeded_ast
 
 
 (* pretty print *)
