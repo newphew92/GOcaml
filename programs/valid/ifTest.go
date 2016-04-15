@@ -2,7 +2,7 @@ package main
 
 var a int
 
-func main(a int) {return a + 1
+func main() {
   if v:=0; v <1 {
     print ("v is very small")
   } else {

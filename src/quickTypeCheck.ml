@@ -784,9 +784,6 @@ and typeCheckClause clause switchID =
     | DefaultSw stats -> typeCheckStatementList stats
 
 let typeCheckCode (code:ast) =
-  try
-    storeDeclarations code.declarations;
-    typeCheckDeclarations code.declarations;
-    code (* we make return for the day we will add annotation is ast*)
-  with
-    | e -> print_string (printScopes ()); raise e
+  storeDeclarations code.declarations;
+  typeCheckDeclarations code.declarations;
+  (code, printScopes ())

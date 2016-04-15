@@ -120,8 +120,16 @@ let ast =
 let completely_weeded_ast = Weeder.weedAst ast
 
 (* INSERT TYPECHECKING STEP HERE *)
-(* TODO: change to typchecker call *)
-let annotated_ast = QuickTypeCheck.typeCheckCode completely_weeded_ast
+let typecheckerOut = QuickTypeCheck.typeCheckCode completely_weeded_ast
+let annotated_ast = fst typecheckerOut
+let symbolTable = snd typecheckerOut
+
+(* Symbol print *)
+let () =
+  if !flag_dst then
+    let dstFile = open_out (!output_file ^ ".symbols") in
+    fprintf dstFile "%s\n" (symbolTable);
+    close_out dstFile
 
 
 (* pretty print *)

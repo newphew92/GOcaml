@@ -13,8 +13,6 @@ ocamlfind ocamlc -c -g -thread -package 'core, ppx_jane' -package str -o scanner
 findlib: [WARNING] Interface topdirs.cmi occurs in several directories: /home/olivier/.opam/4.02.3/lib/ocaml/compiler-libs, /home/olivier/.opam/4.02.3/lib/ocaml
 # Target: prettyPrint.ml.depends, tags: { debug, extension:ml, file:prettyPrint.ml, ocaml, ocamldep, package(core, ppx_jane), package(str), quiet, thread, traverse }
 ocamlfind ocamldep -package 'core, ppx_jane' -package str -modules prettyPrint.ml > prettyPrint.ml.depends
-# Target: weeder.ml.depends, tags: { debug, extension:ml, file:weeder.ml, ocaml, ocamldep, package(core, ppx_jane), package(str), quiet, thread, traverse }
-ocamlfind ocamldep -package 'core, ppx_jane' -package str -modules weeder.ml > weeder.ml.depends
 # Target: codeGen.cmo, tags: { byte, compile, debug, extension:cmo, extension:ml, file:codeGen.cmo, file:codeGen.ml, implem, ocaml, package(core, ppx_jane), package(str), quiet, thread, traverse }
 ocamlfind ocamlc -c -g -thread -package 'core, ppx_jane' -package str -o codeGen.cmo codeGen.ml
 + ocamlfind ocamlc -c -g -thread -package 'core, ppx_jane' -package str -o codeGen.cmo codeGen.ml
@@ -26,10 +24,6 @@ findlib: [WARNING] Interface topdirs.cmi occurs in several directories: /home/ol
 # Target: prettyPrint.cmo, tags: { byte, compile, debug, extension:cmo, extension:ml, file:prettyPrint.cmo, file:prettyPrint.ml, implem, ocaml, package(core, ppx_jane), package(str), quiet, thread, traverse }
 ocamlfind ocamlc -c -g -thread -package 'core, ppx_jane' -package str -o prettyPrint.cmo prettyPrint.ml
 + ocamlfind ocamlc -c -g -thread -package 'core, ppx_jane' -package str -o prettyPrint.cmo prettyPrint.ml
-findlib: [WARNING] Interface topdirs.cmi occurs in several directories: /home/olivier/.opam/4.02.3/lib/ocaml/compiler-libs, /home/olivier/.opam/4.02.3/lib/ocaml
-# Target: weeder.cmo, tags: { byte, compile, debug, extension:cmo, extension:ml, file:weeder.cmo, file:weeder.ml, implem, ocaml, package(core, ppx_jane), package(str), quiet, thread, traverse }
-ocamlfind ocamlc -c -g -thread -package 'core, ppx_jane' -package str -o weeder.cmo weeder.ml
-+ ocamlfind ocamlc -c -g -thread -package 'core, ppx_jane' -package str -o weeder.cmo weeder.ml
 findlib: [WARNING] Interface topdirs.cmi occurs in several directories: /home/olivier/.opam/4.02.3/lib/ocaml/compiler-libs, /home/olivier/.opam/4.02.3/lib/ocaml
 # Target: main.cmo, tags: { byte, compile, debug, extension:cmo, extension:ml, file:main.cmo, file:main.ml, implem, ocaml, package(core, ppx_jane), package(str), quiet, thread, traverse }
 ocamlfind ocamlc -c -g -thread -package 'core, ppx_jane' -package str -o main.cmo main.ml
@@ -90,6 +84,8 @@ findlib: [WARNING] Interface main.cmi occurs in several directories: ., /home/ol
 findlib: [WARNING] Interface topdirs.cmi occurs in several directories: /home/olivier/.opam/4.02.3/lib/ocaml/compiler-libs, /home/olivier/.opam/4.02.3/lib/ocaml
 # Target: quickTypeCheck.ml.depends, tags: { debug, extension:ml, file:quickTypeCheck.ml, ocaml, ocamldep, package(core, ppx_jane), package(str), quiet, thread, traverse }
 ocamlfind ocamldep -package 'core, ppx_jane' -package str -modules quickTypeCheck.ml > quickTypeCheck.ml.depends
+# Target: weeder.ml.depends, tags: { debug, extension:ml, file:weeder.ml, ocaml, ocamldep, package(core, ppx_jane), package(str), quiet, thread, traverse }
+ocamlfind ocamldep -package 'core, ppx_jane' -package str -modules weeder.ml > weeder.ml.depends
 # Target: codeGen.cmx, tags: { compile, debug, extension:cmx, extension:ml, file:codeGen.cmx, file:codeGen.ml, implem, native, ocaml, package(core, ppx_jane), package(str), quiet, thread, traverse }
 ocamlfind ocamlopt -c -g -thread -package 'core, ppx_jane' -package str -o codeGen.cmx codeGen.ml
 + ocamlfind ocamlopt -c -g -thread -package 'core, ppx_jane' -package str -o codeGen.cmx codeGen.ml
