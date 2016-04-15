@@ -648,8 +648,12 @@ and typeCheckStatement stat =
   | BreakS -> ()
   | ContinueS -> ()
   | DeclareS dec -> storeDec dec
-  | ForS loop -> typeCheckLoop loop
+  | ForS loop ->
+    scopeDown();
+    typeCheckLoop loop;
+    scopeUp()
   | IfS (opStat, cond, ifStats, elseStats) ->
+    scopeDown();
     (match opStat with
       | None -> ()
       | Some s -> typeCheckStatement s);
@@ -658,7 +662,8 @@ and typeCheckStatement stat =
         (typeCheckStatementList ifStats;
         typeCheckStatementList elseStats)
       else
-        raise (TypeCheck "if condition must be a boolean")
+        raise (TypeCheck "if condition must be a boolean");
+      scopeUp()
   | PrintS exps ->
     if expAllPrintable exps then ()
     else raise (TypeCheck "expression not printable")
@@ -671,6 +676,7 @@ and typeCheckStatement stat =
     if typesMatch fnReturn currentReturn then ()
     else raise (TypeCheck "return type does not match declared type")
   | SwitchS (opStat, opExp, clauses) ->
+    scopeDown();
     (match opStat with
       | None -> ()
       | Some s -> typeCheckStatement s);
@@ -680,6 +686,7 @@ and typeCheckStatement stat =
       | Some e -> pushInScope switchID (getExpType e)
     );
     typeCheckClauseList clauses switchID;
+    scopeUp()
   | ExpS e -> let _ = getExpType e in ()
   | AssignS a -> typeCheckAssignation a
 
