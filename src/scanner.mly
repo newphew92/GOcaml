@@ -289,9 +289,9 @@ unaryOp:
   | MINUS {$1}
   | NOT {$1}
   | HAT {$1}
-  | STAR {$1}
-  | AMPERSAND {$1}
-  | LTMIN {$1}
+  (*| STAR {$1}*)
+  (*| AMPERSAND {$1}*)
+  (*| LTMIN {$1}*)
 
 switchStat:
   | SWITCH option(expNoStruct) LCURL nonempty_list(switchClause) RCURL

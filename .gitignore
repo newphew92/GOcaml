@@ -8,3 +8,4 @@ src/_build
 !src/main.ml
 !src/ast.ml
 !src/codeGen.ml
+!src/quickTypeCheck.ml
