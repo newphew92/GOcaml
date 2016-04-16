@@ -1,0 +1,181 @@
+./GOcaml ../typing/valid/append.go
+
+Compiling file ../typing/valid/append.go to a.gocaml.py
+
+Syntax error on line 19
+
+Uncaught exception:  Lex.UnusedToken("'append' is reserved, but unused in GoLite”)
+
+ Raised at file "main.ml", line 117, characters 19-20
+
+------------------------------------------------------------------------------------
+
+./GOcaml ../typing/valid/binops.go
+Compiling file ../typing/valid/binops.go to a.gocaml.py
+Syntax error on line 9
+Uncaught exception:
+
+  Scanner.Error
+
+Raised at file "main.ml", line 117, characters 19-20
+------------------------------------------------------------------
+./GOcaml ../typing/valid/casts.go
+Compiling file ../typing/valid/casts.go to a.gocaml.py
+Uncaught exception:
+
+  Weeder.WeederSyntax("undeclared type alias t")
+
+Raised at file "weeder.ml", line 83, characters 18-80
+Called from file "weeder.ml", line 89, characters 8-47
+Called from file "weeder.ml", line 84, characters 35-69
+Called from file "weeder.ml", line 386, characters 21-56
+Called from file "weeder.ml", line 223, characters 14-57
+Called from file "weeder.ml", line 137, characters 36-66
+Called from file "list.ml", line 55, characters 20-23
+Called from file "list.ml", line 55, characters 32-39
+Called from file "list.ml", line 55, characters 32-39
+Called from file "weeder.ml", line 208, characters 12-62
+Called from file "list.ml", line 55, characters 20-23
+Called from file "weeder.ml", line 124, characters 18-79
+Called from file "main.ml", line 120, characters 28-46
+—————————————————————————————————
+
+./GOcaml ../typing/valid/for_stmt.go
+Compiling file ../typing/valid/for_stmt.go to a.gocaml.py
+Syntax error on line 20
+Uncaught exception:
+
+  Scanner.Error
+
+Raised at file "main.ml", line 117, characters 19-20
+——————————————————————————————
+./GOcaml ../typing/valid/funccall.go
+Compiling file ../typing/valid/funccall.go to a.gocaml.py
+————————————————————
+./GOcaml ../typing/valid/if_stmt.go
+Compiling file ../typing/valid/if_stmt.go to a.gocaml.py
+Uncaught exception:
+
+  Weeder.WeederSyntax("undeclared type alias t")
+
+Raised at file "weeder.ml", line 83, characters 18-80
+Called from file "weeder.ml", line 89, characters 8-47
+Called from file "weeder.ml", line 84, characters 35-69
+Called from file "weeder.ml", line 215, characters 27-61
+Called from file "weeder.ml", line 137, characters 36-66
+Called from file "list.ml", line 55, characters 20-23
+Called from file "list.ml", line 55, characters 32-39
+Called from file "list.ml", line 55, characters 32-39
+Called from file "weeder.ml", line 208, characters 12-62
+Called from file "list.ml", line 55, characters 20-23
+Called from file "weeder.ml", line 124, characters 18-79
+Called from file "main.ml", line 120, characters 28-46
+—————————————————————————
+./GOcaml ../typing/valid/incr.go
+Compiling file ../typing/valid/incr.go to a.gocaml.py
+Uncaught exception:
+
+  Weeder.WeederSyntax("undeclared type alias num")
+
+Raised at file "weeder.ml", line 83, characters 18-80
+Called from file "weeder.ml", line 89, characters 8-47
+Called from file "weeder.ml", line 84, characters 35-69
+Called from file "weeder.ml", line 215, characters 27-61
+Called from file "weeder.ml", line 137, characters 36-66
+Called from file "list.ml", line 55, characters 20-23
+Called from file "list.ml", line 55, characters 32-39
+Called from file "list.ml", line 55, characters 32-39
+Called from file "list.ml", line 55, characters 32-39
+Called from file "list.ml", line 55, characters 32-39
+Called from file "weeder.ml", line 208, characters 12-62
+Called from file "list.ml", line 55, characters 20-23
+Called from file "weeder.ml", line 124, characters 18-79
+Called from file "main.ml", line 120, characters 28-46
+——————————————————————————————
+ ./GOcaml ../typing/valid/init_stmt.go
+Compiling file ../typing/valid/init_stmt.go to a.gocaml.py
+——————————————————————————
+./GOcaml ../typing/valid/print.go
+Compiling file ../typing/valid/print.go to a.gocaml.py
+Uncaught exception:
+
+  Weeder.WeederSyntax("undeclared type alias employee")
+
+Raised at file "weeder.ml", line 83, characters 18-80
+Called from file "weeder.ml", line 89, characters 8-47
+Called from file "weeder.ml", line 84, characters 35-69
+Called from file "weeder.ml", line 215, characters 27-61
+Called from file "weeder.ml", line 137, characters 36-66
+Called from file "list.ml", line 55, characters 20-23
+Called from file "list.ml", line 55, characters 32-39
+Called from file "weeder.ml", line 208, characters 12-62
+Called from file "list.ml", line 55, characters 20-23
+Called from file "list.ml", line 55, characters 32-39
+Called from file "list.ml", line 55, characters 32-39
+Called from file "weeder.ml", line 124, characters 18-79
+Called from file "main.ml", line 120, characters 28-46
+——————————————————————————————
+
+./GOcaml ../typing/valid/return.go
+
+Compiling file ../typing/valid/return.go to a.gocaml.py
+
+Uncaught exception:
+
+
+
+  Weeder.WeederSyntax("undeclared type alias point")
+
+
+
+Raised at file "weeder.ml", line 83, characters 18-80
+
+Called from file "weeder.ml", line 89, characters 8-47
+
+Called from file "weeder.ml", line 84, characters 35-69
+
+Called from file "weeder.ml", line 215, characters 27-61
+
+Called from file "weeder.ml", line 137, characters 36-66
+
+Called from file "list.ml", line 55, characters 20-23
+
+Called from file "weeder.ml", line 208, characters 12-62
+
+Called from file "list.ml", line 55, characters 20-23
+
+Called from file "list.ml", line 55, characters 32-39
+
+Called from file "list.ml", line 55, characters 32-39
+
+Called from file "weeder.ml", line 124, characters 18-79
+
+Called from file "main.ml", line 120, characters 28-46
+
+————————————————————————————————————
+
+./GOcaml ../typing/valid/short_decl.go
+Compiling file ../typing/valid/short_decl.go to a.gocaml.py
+
+——————————————————————————
+./GOcaml ../typing/valid/structs.go
+Compiling file ../typing/valid/structs.go to a.gocaml.py
+Syntax error on line 22
+Uncaught exception:
+
+  Scanner.Error
+
+Raised at file "main.ml", line 117, characters 19-20
+—————————————————————————————————
+
+./GOcaml ../typing/valid/switch.go
+Compiling file ../typing/valid/switch.go to a.gocaml.py
+—————————————————————————————
+./GOcaml ../typing/valid/unops.go
+Compiling file ../typing/valid/unops.go to a.gocaml.py
+Syntax error on line 10
+Uncaught exception:
+
+  Scanner.Error
+
+Raised at file "main.ml", line 117, characters 19-20

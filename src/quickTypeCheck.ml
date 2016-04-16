@@ -783,7 +783,15 @@ and typeCheckClause clause switchID =
         ) conditions in ()
     | DefaultSw stats -> typeCheckStatementList stats
 
+type typecheckedAst =
+      | Ok of (ast * string)
+      | Error of (exn * string)
+
 let typeCheckCode (code:ast) =
-  storeDeclarations code.declarations;
-  typeCheckDeclarations code.declarations;
-  (code, printScopes ())
+  try
+    storeDeclarations code.declarations;
+    typeCheckDeclarations code.declarations;
+      Ok (code, printScopes ())
+  with
+    | TypeCheck e ->
+      Error (TypeCheck e, "EMERGENCY DUMP" ^ (printScopes ()))

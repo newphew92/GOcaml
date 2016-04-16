@@ -106,7 +106,7 @@ subDec_list_separated_semicolon:
   | non_empty_subDec_list_separated_semicolon { $1 }
 
 non_empty_subDec_list_separated_semicolon:
-  | subDec { [$1] }
+  | subDec option(SEMICOLON) { [$1] }
   | subDec SEMICOLON non_empty_subDec_list_separated_semicolon { $1 :: $3 }
 
 subDec:
