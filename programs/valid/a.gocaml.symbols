@@ -1,0 +1,22 @@
+SYMBOL TABLE DUMP:
+
+Declared structs:
+
+=====
+level: 0
+f : function
+main : function
+a : boolean
+
+=====
+level: 1
+return : integer
+a : integer
+
+=====
+level: 1
+a : integer
+return : null
+
+=====
+

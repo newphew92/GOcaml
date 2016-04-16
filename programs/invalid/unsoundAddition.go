@@ -11,7 +11,7 @@ func main (a int, b int) {
     return j + k
 }
 
-func print_string_and_return(s) {
+func print_string_and_return(s string) {
   print(s)
   return x
 }

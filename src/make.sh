@@ -10,6 +10,9 @@ echo -e "  \e[33m=====================\e[0m"
 echo -e "\e[1m\e[33m- Compile AST \e[0m"
 ocamlc -w -30 ast.ml
 
+echo -e "\e[1m\e[33m- Compile TypeChecker \e[0m"
+ocamlc -w -30 quickTypeCheck.ml
+
 echo -e "\e[1m\e[33m- Menhir : build parser\e[0m"
 menhir scanner.mly
 
