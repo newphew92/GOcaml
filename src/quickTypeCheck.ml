@@ -326,6 +326,17 @@ let rec getOpExpType (exp:exp option) =
 
 and getExpType (exp:exp) =
   match exp.options with
+    | Append (e1, e2) ->
+      let t1 = getExpType e1 in
+      let t2 = getExpType e2 in
+      (match t1 with
+        | Array (len, elemType) ->
+          raise (TypeCheck "type mismatch cannot append to array, only slices")
+        | Slice (elemType) ->
+          if typesMatch t2 elemType then t1
+          else raise (TypeCheck "type mismatch when appending to slice")
+        | _ -> raise (TypeCheck "append first argument must be an array or slice")
+      )
     | FloatConst e -> Float64
     | IntConst e -> Int
     | OctConst e -> Int

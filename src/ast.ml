@@ -99,6 +99,7 @@ and expOptions =
   | Lambda of (string * typeCall option) list * typeCall option * statement list * string
   | TypeCast of typeCall * exp
   | StructObj of string * (string * exp) list
+  | Append of exp * exp
 and typeCallOptions =
   | BuiltInType of string
   | DeclaredType of string

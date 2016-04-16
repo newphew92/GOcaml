@@ -145,6 +145,9 @@ and pprintExp (exp:exp) =
       ["("] @ (pprintExp exp) @ [")"]
     | StructObj (name, fields) ->
       name::"{"::(pprintStructFieldInstantiation fields)@["}"]
+    | Append (e1, e2) ->
+      "append("::(pprintExp e1) @
+      [","] @ (pprintExp e2) @ [")"]
 
 and pprintStructFieldInstantiation fields =
   match fields with
