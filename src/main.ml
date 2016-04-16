@@ -114,15 +114,28 @@ let ast =
       with
       | e -> print_endline ("Syntax error on line " ^
              (string_of_int (get_line lexbuf.lex_curr_pos program_string)));
-             raise e
+             exit(1)
 
 (* weed AST *)
 let completely_weeded_ast = Weeder.weedAst ast
 
-(* INSERT TYPECHECKING STEP HERE *)
+(* Typecheck *)
 let typecheckerOut = QuickTypeCheck.typeCheckCode completely_weeded_ast
-let annotated_ast = fst typecheckerOut
-let symbolTable = snd typecheckerOut
+let wellTypedEvent =
+  (match typecheckerOut with
+    | Ok (code, table) ->
+      (code, table)
+    | Error (exc, table) ->
+      let () =
+        if !flag_dst then
+          let dstFile = open_out (!output_file ^ ".symbols") in
+          fprintf dstFile "%s\n" (table);
+          close_out dstFile in
+          raise exc
+  )
+
+let annotated_ast = fst wellTypedEvent
+let symbolTable = snd wellTypedEvent
 
 (* Symbol print *)
 let () =

@@ -19,8 +19,9 @@
 %token <string> RUNESTRING
 %token <string> BOOL
 %token <string> TYPE
+%token <string> APPEND
 /* Unused but reserved tokens
- %token APPEND, CHAN, CONST, DEFER, DOTS, FALLTHROUGH
+ %token CHAN, CONST, DEFER, DOTS, FALLTHROUGH
 %token GO, GOTO, IMPORT, INTERFACE, MAP, RANGE, SELECT */
 %token <string> AMPERSAND, AMPHAT, AMPHATEQ
 %token <string> AND, OR
@@ -43,7 +44,7 @@
 %token <string> LPAR, RPAR
 %token <string> LSQPAR, RSQPAR
 %token <string> LT, LTEQ
-%token <string> LTMIN
+(* %token <string> LTMIN *)
 %token <string> MINEQ, MINUS, MMINUS
 %token <string> NOT, NOTEQ
 %token <string> PACKAGE
@@ -106,7 +107,7 @@ subDec_list_separated_semicolon:
   | non_empty_subDec_list_separated_semicolon { $1 }
 
 non_empty_subDec_list_separated_semicolon:
-  | subDec { [$1] }
+  | subDec option(SEMICOLON) { [$1] }
   | subDec SEMICOLON non_empty_subDec_list_separated_semicolon { $1 :: $3 }
 
 subDec:
@@ -218,7 +219,9 @@ primary:
   | primary LSQPAR option(exp) COLON option(exp) RSQPAR { {theType=None; options=ArraySlice ($1, $3, $5) } } /* slices */
   | primary LPAR exp_list RPAR { { theType=None; options=FunctionCall ($1, $3) } } /* function call */
   | primary DOT ID { { theType=None; options=ObjectField ($1, $3) } } /* package.field or struct.field */
-
+  | APPEND LPAR ID COMMA exp RPAR {
+    let (lst:exp) = {theType=None; options=ExpId $3} in
+    {theType=None; options= Append (lst, $5)} }
 type_cast:
   | TYPE LPAR exp RPAR {
       let typeObject = { theType = None; options = (BuiltInType $1) } in

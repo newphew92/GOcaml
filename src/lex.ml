@@ -12,7 +12,7 @@
   exception UnusedToken of string
 
   (* for debug *)
-  let debug_flag = ref false
+  let debug_flag = ref true
   let dprint str =
     if !debug_flag then
       if (compare str "\n") = 0 then
@@ -3269,7 +3269,7 @@ and __ocaml_lex_read_rec lexbuf __ocaml_lex_state =
 
   | 58 ->
 # 161 "lex.mll"
-                     ( dprint (Lexing.lexeme lexbuf); raise (UnusedToken "'append' is reserved, but unused in GoLite") )
+                     ( dprint (Lexing.lexeme lexbuf); semiFlagDown(); APPEND (Lexing.lexeme lexbuf) )
 # 3274 "lex.ml"
 
   | 59 ->

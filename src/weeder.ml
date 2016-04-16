@@ -228,9 +228,11 @@ and weedDec (declr:dec) inLoop inFuncBlock =
 
     (* td: typeDec *)
     | TypeD td ->
-      { theType=t;
+      (* TODO: dealiase type from within functions *)
+      raise (WeederSyntax "This GOcaml version does not support type alias in functions")
+      (*{ theType=t;
         options=TypeD (weedTypeDec td inLoop inFuncBlock)
-      }
+      }*)
 
 and weedOptionalDec (declr:dec option) inLoop inFuncBlock =
   match declr with
@@ -412,6 +414,8 @@ and weedExp (ex:exp) inLoop inFuncBlock =
   let t = ex.theType in
   let x:exp = { theType=t;
     options=match ex.options with
+      | Append (e1, e2) ->
+        Append (weedExp e1 inLoop inFuncBlock, weedExp e2 inLoop inFuncBlock)
       | BinaryOp (e1, op, e2) ->  (* e1: exp, op: string, e2: exp*)
         BinaryOp (
           weedExp e1 inLoop inFuncBlock,

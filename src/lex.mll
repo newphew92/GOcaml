@@ -158,7 +158,7 @@ rule read =
   | ','             { dprint (Lexing.lexeme lexbuf); semiFlagDown();  COMMA (Lexing.lexeme lexbuf) }
   | '.'             { dprint (Lexing.lexeme lexbuf); semiFlagDown();  DOT (Lexing.lexeme lexbuf) }
   | ':'             { dprint (Lexing.lexeme lexbuf); semiFlagDown();  COLON (Lexing.lexeme lexbuf) }
-  | "append"         { dprint (Lexing.lexeme lexbuf); raise (UnusedToken "'append' is reserved, but unused in GoLite") }
+  | "append"         { dprint (Lexing.lexeme lexbuf); semiFlagDown(); APPEND (Lexing.lexeme lexbuf) }
   | "break"          { dprint (Lexing.lexeme lexbuf); semiFlagUp();  BREAK (Lexing.lexeme lexbuf) }
   | "case"           { dprint (Lexing.lexeme lexbuf); semiFlagDown();  CASE (Lexing.lexeme lexbuf)}
   | "chan"           { dprint (Lexing.lexeme lexbuf); raise (UnusedToken "'chan' is reserved, but unused in GoLite") }

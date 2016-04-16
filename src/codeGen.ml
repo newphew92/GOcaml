@@ -134,6 +134,11 @@ and codeGenDec (decl:dec) =
           (List.map
            (fun v -> printIndent()::(renameVar v)::"="::codeGenInstantiateArray tc @ ["\n"])
            vars)
+        | SliceType _ ->
+            List.flatten
+            (List.map
+             (fun v -> printIndent()::(renameVar v)::["= list ()"] @ ["\n"])
+             vars)
         | _ -> []
       )
     (* VarsDandAssign of string list * typeCall option * exp list *)
@@ -234,6 +239,8 @@ and codeGenExpInPar (exp:exp) =
 
 and codeGenExp (exp:exp) =
   match exp.options with
+    | Append (e1, e2) ->
+      "("::(codeGenExp e1) @ [") + ["] @(codeGenExp e1) @ ["]"]
     | FloatConst s -> [s]
     | IntConst s -> [s]
     | OctConst s -> [s]

@@ -1,7 +1,9 @@
 package main
 
+var esc rune
+
 func main () {
-  c = pick()
+  c := pick()
   switch c {
     case '&':
         esc = "&amp;"
@@ -25,7 +27,7 @@ func panic(s string) {
   }
 }
 
-func pick() {
+func pick() rune {
   println ("I just give you a character")
   return '>'
 }
