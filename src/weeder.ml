@@ -229,10 +229,12 @@ and weedDec (declr:dec) inLoop inFuncBlock =
     (* td: typeDec *)
     | TypeD td ->
       (* TODO: dealiase type from within functions *)
+      if inFuncBlock then
       raise (WeederSyntax "This GOcaml version does not support type alias in functions")
-      (*{ theType=t;
+      else
+      { theType=t;
         options=TypeD (weedTypeDec td inLoop inFuncBlock)
-      }*)
+      }
 
 and weedOptionalDec (declr:dec option) inLoop inFuncBlock =
   match declr with
